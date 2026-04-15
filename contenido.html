@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Lección - MathFlow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="container extra-grande">
+  <div style="text-align: left; margin-bottom: 15px;">
+    <button onclick="window.location.href='lecciones.html'" style="width: auto; padding: 8px 15px; background: #ccc;">← Volver al Temario</button>
+  </div>
+
+  <h1 id="titulo-leccion">Cargando...</h1>
+  
+  <div class="contenido-box" id="cuerpo-leccion">
+    <p>Cargando contenido de la lección...</p>
+  </div>
+
+  <div id="recursos" style="text-align: left; margin-bottom: 20px; font-size: 14px;"></div>
+
+  <button class="btn-accion" onclick="irAlExamen()">Presentar Evaluación</button>
+</div>
+
+<script>
+  const SUPABASE_URL = 'http://127.0.0.1:54321';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const idLeccion = sessionStorage.getItem("leccionActual");
+    if (!idLeccion) {
+      window.location.href = "bienvenida.html";
+      return;
+    }
+
+    const { data: leccion, error } = await _supabase
+      .from('leccion')
+      .select('*')
+      .eq('id_leccion', idLeccion)
+      .single();
+
+    if (leccion) {
+      document.getElementById('titulo-leccion').innerText = leccion.tema;
+      document.getElementById('cuerpo-leccion').innerHTML = `<p>${leccion.contenido}</p>`;
+      if (leccion.recursos_didacticos) {
+        document.getElementById('recursos').innerHTML = `<b>Recurso de apoyo:</b> <a href="#">${leccion.recursos_didacticos}</a>`;
+      }
+    }
+  });
+
+  function irAlExamen() {
+    window.location.href = "evaluacion.html";
+  }
+</script>
+
+</body>
+</html>

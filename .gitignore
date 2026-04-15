@@ -1,0 +1,19 @@
+# --- Entorno de Supabase Local ---
+.supabase/
+supabase/.temp/
+supabase/logs/
+
+# --- Dependencias de Node ---
+node_modules/
+npm-debug.log*
+
+# --- Archivos de Sistema y Editores ---
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.log
+
+# --- Datos sensibles ---
+.env
+.env.local

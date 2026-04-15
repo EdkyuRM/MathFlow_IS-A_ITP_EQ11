@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perfil Profesor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+
+  <img src="imagenes/logo.jpeg">
+
+  <h2 id="nombre"></h2>
+  <div class="subtitle">Docente</div>
+
+  <br>
+
+  <button onclick="ir('perfil_docente.html')">👤 Perfil</button>
+  <button onclick="ir('cursos.html')">📚 Mis cursos</button>
+  <button onclick="ir('evaluaciones.html')">📝 Evaluaciones</button>
+  <button onclick="ir('metricas.html')">📊 Panel de métricas</button>
+  <button onclick="ir('mensajes.html')">💬 Mensajes</button>
+
+</div>
+
+<script>
+  const usuario = localStorage.getItem("usuario");
+  document.getElementById("nombre").innerText = usuario;
+
+  function ir(pagina) {
+    window.location.href = pagina;
+  }
+</script>
+
+</body>
+</html>

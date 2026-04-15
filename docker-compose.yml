@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: .
+    container_name: supabase_db_MathFlow
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL_LOCAL}
+    # Esto asegura que el backend pueda comunicarse con los contenedores de Supabase
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  default:
+    name: supabase_network_mathflow # Nombre opcional para identificar tu red local

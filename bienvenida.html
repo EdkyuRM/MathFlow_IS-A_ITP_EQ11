@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Bienvenida - MathFlow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="container grande">
+  <h1 id="saludo">Cargando perfil...</h1>
+  
+  <div id="seccion-algoritmo" style="display:none; margin-bottom: 30px; background: #eaffd0; padding: 15px; border-radius: 15px; border: 2px dashed #7CFC00;">
+    <div class="subtitle" style="color: #222; font-weight: bold; margin-bottom: 10px;">🎯 Recomendado para tu progreso:</div>
+    <div id="contenedor-recomendaciones"></div>
+  </div>
+  <div class="subtitle">Tus cursos asignados:</div>
+
+  <div id="contenedor-materias">
+      <p id="mensaje-carga">Buscando tus clases...</p>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'http://127.0.0.1:54321';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'; 
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  document.addEventListener('DOMContentLoaded', inicializarDashboard);
+
+  async function inicializarDashboard() {
+    try {
+      const { data: authData, error: authError } = await _supabase.auth.getUser();
+      if (authError || !authData.user) {
+        window.location.href = "index.html"; 
+        return;
+      }
+
+      const uidUsuario = authData.user.id;
+
+      const { data: perfilData } = await _supabase
+        .from('usuario')
+        .select('nombre')
+        .eq('id_usuario', uidUsuario)
+        .single();
+
+      if (perfilData) {
+        document.getElementById("saludo").innerText = "Bienvenid@, " + perfilData.nombre;
+      }
+
+      // Llamamos a ambas funciones en paralelo
+      cargarRecomendaciones(uidUsuario);
+      cargarCursos(uidUsuario);
+
+    } catch (err) {
+      console.error("Error al inicializar:", err);
+    }
+  }
+
+  // ==========================================
+  // ALGORITMO DE RECOMENDACION
+  // ==========================================
+  async function cargarRecomendaciones(uid) {
+    try {
+      // Buscar la evaluación más reciente donde el alumno sacó menos de 90
+      const { data: fallos, error: errProgreso } = await _supabase
+        .from('progreso_alumno')
+        .select('id_leccion, puntaje_obtenido, leccion(tema)')
+        .eq('id_usuario', uid)
+        .lt('puntaje_obtenido', 90)
+        .order('fecha_evaluacion', { ascending: false })
+        .limit(1);
+
+      if (errProgreso) throw errProgreso;
+
+      // Si hay un fallo, mostramos la sección y buscamos recursos
+      if (fallos && fallos.length > 0) {
+        const problema = fallos[0];
+        document.getElementById('seccion-algoritmo').style.display = "block";
+
+        // Traer los recursos de apoyo para esa lección en específico
+        const { data: recursos, error: errRecursos } = await _supabase
+          .from('recurso_refuerzo')
+          .select('*')
+          .eq('id_leccion', problema.id_leccion);
+
+        if (errRecursos) throw errRecursos;
+
+        const contenedor = document.getElementById('contenedor-recomendaciones');
+        contenedor.innerHTML = "";
+
+        if (recursos.length === 0) {
+          contenedor.innerHTML = "<p style='font-size:13px; color:#555;'>No hay recursos extra por el momento, ¡pero te sugerimos repasar la lección!</p>";
+        } else {
+          // Dibujar las tarjetas de recomendación
+          recursos.forEach(res => {
+            const card = document.createElement('div');
+            card.className = 'materia'; 
+            card.style.background = "#fff";
+            card.style.marginTop = "10px";
+            card.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+            
+            card.innerHTML = `
+              <div style="font-size: 28px;">${res.tipo_recurso === 'Video' ? '📺' : (res.tipo_recurso === 'Lectura' ? '📖' : '📝')}</div>
+              <div class="materia-info">
+                <span style="color: #6be000; font-size: 11px; text-transform: uppercase;">Refuerzo: ${problema.leccion.tema}</span>
+                <span style="font-size: 14px; font-weight: bold; color: #333;">${res.titulo_recurso}</span>
+                <span style="font-size: 12px; font-weight: normal; color: gray;">${res.descripcion_recurso}</span>
+              </div>
+            `;
+            // Redirige al clip-holder
+            card.onclick = () => window.location.href = res.url_recurso;
+            contenedor.appendChild(card);
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error en algoritmo:", err);
+    }
+  }
+
+  // ==========================================
+  // FUNCIÓN ORIGINAL DE CARGA DE CURSOS
+  // ==========================================
+  async function cargarCursos(uid) {
+    const contenedor = document.getElementById('contenedor-materias');
+    
+    const { data: inscripciones, error } = await _supabase
+      .from('inscripcion')
+      .select(`
+        id_curso,
+        curso (
+          nombre_curso,
+          asignatura (
+            nombre_asignatura,
+            img_url_asignatura
+          )
+        )
+      `)
+      .eq('id_usuario', uid);
+
+    if (error) {
+      contenedor.innerHTML = "<p>Error al cargar las materias.</p>";
+      console.error(error);
+      return;
+    }
+
+    if (inscripciones.length === 0) {
+      contenedor.innerHTML = "<p>Aún no estás inscrito en ningún curso.</p>";
+      return;
+    }
+
+    contenedor.innerHTML = ""; 
+    
+    inscripciones.forEach(inscripcion => {
+      const datosCurso = inscripcion.curso;
+      const datosAsignatura = datosCurso.asignatura;
+
+      const divMateria = document.createElement('div');
+      divMateria.className = 'materia';
+      divMateria.onclick = () => seleccionarCurso(inscripcion.id_curso, datosAsignatura.nombre_asignatura);
+      
+      divMateria.innerHTML = `
+        <img src="${datosAsignatura.img_url_asignatura || 'imagenes/default.png'}" alt="${datosAsignatura.nombre_asignatura}">
+        <div class="materia-info">
+            <span>${datosAsignatura.nombre_asignatura}</span>
+            <span style="font-size: 12px; color: #444; font-weight: normal;">${datosCurso.nombre_curso}</span>
+        </div>
+      `;
+      
+      contenedor.appendChild(divMateria);
+    });
+  }
+
+  function seleccionarCurso(idCurso, nombreMateria) {
+    sessionStorage.setItem("cursoActual", idCurso);
+    sessionStorage.setItem("nombreMateria", nombreMateria);
+    window.location.href = "lecciones.html"; 
+  }
+</script>
+
+</body>
+</html>

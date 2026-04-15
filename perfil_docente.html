@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perfil Docente</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+
+  <h1 id="nombre"></h1>
+  <div class="subtitle">Tecnológico de Pachuca</div>
+
+  <br><br>
+
+  <button onclick="volver()">⬅ Regresar</button>
+
+</div>
+
+<script>
+  const usuario = localStorage.getItem("usuario");
+  document.getElementById("nombre").innerText = usuario;
+
+  function volver() {
+    window.location.href = "perfil_profesor.html";
+  }
+</script>
+
+</body>
+</html>

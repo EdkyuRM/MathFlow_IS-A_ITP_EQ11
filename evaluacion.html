@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Evaluación - MathFlow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="container extra-grande">
+  <h1 id="titulo-examen">Evaluación</h1>
+  <div class="subtitle" id="sub-examen">Responde las siguientes preguntas</div>
+
+  <div id="contenedor-preguntas">
+    <p>Cargando preguntas...</p>
+  </div>
+
+  <button class="btn-accion" id="btn-enviar" onclick="calificarExamen()" style="display:none;">Enviar y Calificar</button>
+  
+  <div id="resultado-box" class="contenido-box" style="display: none; margin-top: 20px; text-align: center;">
+    <h2 id="puntaje-final"></h2>
+    <p id="recomendacion-algoritmo" style="font-weight: bold;"></p>
+    <button class="btn-accion" onclick="window.location.href='bienvenida.html'">Volver al Inicio</button>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'http://127.0.0.1:54321';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let preguntasExamen = []; // Guardaremos las preguntas aquí para validarlas
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const idLeccion = sessionStorage.getItem("leccionActual");
+    
+    // Traemos las preguntas de esta lección
+    const { data: evaluaciones } = await _supabase
+      .from('evaluacion')
+      .select('*')
+      .eq('id_leccion', idLeccion);
+
+    const contenedor = document.getElementById('contenedor-preguntas');
+    
+    if (!evaluaciones || evaluaciones.length === 0) {
+      contenedor.innerHTML = "<p>No hay preguntas asignadas a esta lección.</p>";
+      return;
+    }
+
+    preguntasExamen = evaluaciones;
+    contenedor.innerHTML = ""; // Limpiar
+
+    // Dibujar el formulario
+    evaluaciones.forEach((eval, index) => {
+      const div = document.createElement('div');
+      div.className = 'pregunta-card';
+      // Para un prototipo rápido, usamos inputs de texto. 
+      // El alumno debe escribir la respuesta (ej. "La misma constante C" o "Falso")
+      div.innerHTML = `
+        <h4>${index + 1}. ${eval.pregunta}</h4>
+        <input type="text" id="respuesta-${eval.id_evaluacion}" class="respuesta-input" placeholder="Escribe tu respuesta aquí...">
+      `;
+      contenedor.appendChild(div);
+    });
+
+    document.getElementById('btn-enviar').style.display = "block";
+  });
+
+  async function calificarExamen() {
+    let puntajeTotal = 0;
+    let puntajeMaximoPosible = 0;
+
+    // 1. Validar las respuestas
+    preguntasExamen.forEach(eval => {
+      puntajeMaximoPosible += eval.puntaje;
+      const respuestaUsuario = document.getElementById(`respuesta-${eval.id_evaluacion}`).value.trim().toLowerCase();
+      const respuestaCorrecta = eval.respuesta_correcta.trim().toLowerCase();
+
+      // Si coincide, suma el puntaje de esa pregunta
+      if (respuestaUsuario === respuestaCorrecta) {
+        puntajeTotal += eval.puntaje;
+      }
+    });
+
+    // Calcular el porcentaje (0 a 100)
+    const calificacionFinal = Math.round((puntajeTotal / puntajeMaximoPosible) * 100);
+
+    // 2. Guardar en la Base de Datos (Para el Algoritmo)
+    const { data: authData } = await _supabase.auth.getUser();
+    const idLeccion = sessionStorage.getItem("leccionActual");
+
+    await _supabase.from('progreso_alumno').insert({
+      id_usuario: authData.user.id,
+      id_leccion: idLeccion,
+      puntaje_obtenido: calificacionFinal
+    });
+
+    // 3. Mostrar el resultado y la acción del Algoritmo (Basado en Reglas)
+    document.getElementById('contenedor-preguntas').style.display = "none";
+    document.getElementById('btn-enviar').style.display = "none";
+    
+    const resultadoBox = document.getElementById('resultado-box');
+    resultadoBox.style.display = "block";
+    document.getElementById('puntaje-final').innerText = `Tu calificación: ${calificacionFinal}/100`;
+
+    // AQUI INICIA LA LÓGICA DEL ALGORITMO HEURÍSTICO
+    const recomendacion = document.getElementById('recomendacion-algoritmo');
+    if (calificacionFinal < 70) {
+      recomendacion.style.color = "red";
+      recomendacion.innerText = "Algoritmo: Te sugerimos repasar la teoría de esta lección y ver el video de apoyo antes de avanzar.";
+    } else if (calificacionFinal <= 89) {
+      recomendacion.style.color = "orange";
+      recomendacion.innerText = "Algoritmo: ¡Buen trabajo! Te recomendamos realizar unos ejercicios de práctica para asegurar tu dominio.";
+    } else {
+      recomendacion.style.color = "green";
+      recomendacion.innerText = "Algoritmo: ¡Maestría alcanzada! Estás listo para desbloquear y avanzar a la siguiente lección.";
+    }
+  }
+</script>
+
+</body>
+</html>

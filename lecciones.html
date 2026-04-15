@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Temario - MathFlow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="container extra-grande">
+  <div style="text-align: left; margin-bottom: 15px;">
+    <button onclick="window.location.href='bienvenida.html'" style="width: auto; padding: 8px 15px; background: #ccc; color: #333;">← Volver</button>
+  </div>
+
+  <h1 id="titulo-curso">Cargando curso...</h1>
+  <div id="docente-info" class="docente-info">Docente: Cargando...</div>
+
+  <div style="text-align: left; font-weight: bold; font-size: 14px; margin-top: 10px;">Tu progreso:</div>
+  <div class="progress-container">
+    <div id="barra-progreso" class="progress-fill"></div>
+  </div>
+  <div style="text-align: right; font-size: 12px; color: gray; margin-bottom: 25px;">
+    <span id="texto-progreso">0</span>% Completado
+  </div>
+
+  <div class="subtitle" style="text-align: left;">Temario del curso</div>
+  
+  <div id="contenedor-lecciones">
+      <p>Cargando lecciones...</p>
+  </div>
+</div>
+
+<script>
+  // Configuración de Supabase
+  const SUPABASE_URL = 'http://127.0.0.1:54321';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'; // ¡Pon tu llave de nuevo!
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  document.addEventListener('DOMContentLoaded', inicializarLecciones);
+
+  async function inicializarLecciones() {
+    // 1. Verificamos sesión
+    const { data: authData } = await _supabase.auth.getUser();
+    if (!authData.user) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    // 2. Recuperamos el ID del curso que clickeamos en la pantalla anterior
+    const idCurso = sessionStorage.getItem("cursoActual");
+    
+    if (!idCurso) {
+      alert("No se seleccionó ningún curso.");
+      window.location.href = "bienvenida.html";
+      return;
+    }
+
+    cargarDatosCurso(idCurso);
+    cargarTemario(idCurso);
+  }
+
+  async function cargarDatosCurso(idCurso) {
+    // Consulta relacional: Traemos el curso y el nombre de su docente
+    const { data: curso, error } = await _supabase
+      .from('curso')
+      .select(`
+        nombre_curso,
+        usuario (nombre)
+      `)
+      .eq('id_curso', idCurso)
+      .single();
+
+    if (curso) {
+      document.getElementById('titulo-curso').innerText = curso.nombre_curso;
+      // usuario es un objeto porque es una Foreign Key
+      document.getElementById('docente-info').innerText = "Docente: " + (curso.usuario?.nombre || "Sin asignar");
+    }
+  }
+
+  async function cargarTemario(idCurso) {
+    const contenedor = document.getElementById('contenedor-lecciones');
+
+    // Consultamos las lecciones de este curso específico
+    const { data: lecciones, error } = await _supabase
+      .from('leccion')
+      .select('id_leccion, tema, contenido')
+      .eq('id_curso', idCurso)
+      .order('id_leccion', { ascending: true }); // Las ordenamos lógicamente
+
+    if (error || lecciones.length === 0) {
+      contenedor.innerHTML = "<p>Aún no hay lecciones para este curso.</p>";
+      return;
+    }
+
+    contenedor.innerHTML = ""; // Limpiamos
+
+    lecciones.forEach((leccion, index) => {
+      const divLeccion = document.createElement('div');
+      divLeccion.className = 'leccion-card';
+      // Pasamos el ID para la futura pantalla de contenido/evaluación
+      divLeccion.onclick = () => abrirLeccion(leccion.id_leccion);
+
+      divLeccion.innerHTML = `
+        <div class="leccion-info">
+            <h3>Tema ${index + 1}: ${leccion.tema}</h3>
+            <p>${leccion.contenido.substring(0, 50)}...</p>
+        </div>
+        <div style="color: #7CFC00; font-weight: bold; font-size: 20px;">▶</div>
+      `;
+      contenedor.appendChild(divLeccion);
+    });
+
+    // Simulador de Progreso para el Sprint 2
+    // Aquí es donde entrará el algoritmo más adelante. Por ahora lo fijaremos en 35%
+    setTimeout(() => {
+      document.getElementById('barra-progreso').style.width = '35%';
+      document.getElementById('texto-progreso').innerText = '35';
+    }, 300);
+  }
+
+  function abrirLeccion(idLeccion) {
+    // Guardamos la lección actual
+    sessionStorage.setItem("leccionActual", idLeccion);
+    //Redirección a la página de contenido
+    window.location.href = "contenido.html";
+  }
+</script>
+
+</body>
+</html>
