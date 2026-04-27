@@ -105,10 +105,3 @@ async function accionUsuario() {
     console.error(err);
   }
 }
-
-async function cerrarSesion() {
-  const { error } = await _supabase.auth.signOut();
-  if (error) console.error("Error al salir:", error);
-  sessionStorage.clear();
-  window.location.href = "index.html";
-}
