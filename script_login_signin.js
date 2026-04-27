@@ -69,21 +69,46 @@ async function accionUsuario() {
       alert("Registro exitoso. Revisa tu correo de confirmación (simulación)");
       cambiarModo(); // Cambiam a login automáticamente
 
+    // Reemplaza la parte final de tu función accionUsuario en script_login_signin.js
+  } else {
+    // --- Lógica de Login ---
+    const { data, error } = await _supabase.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+    if (error) throw error;
+    
+    // Consultamos el rol en la tabla pública para saber a dónde mandarlo
+    const { data: perfil, error: perfilError } = await _supabase
+      .from('usuario')
+      .select('tipo_usuario')
+      .eq('id_usuario', data.user.id)
+      .single();
+
+    if (perfilError) {
+      console.error("Error al obtener el rol:", perfilError);
+      alert("Hubo un problema al verificar tu perfil.");
+      return;
+    }
+
+    // Redirección inteligente
+    if (perfil.tipo_usuario === 'Docente') {
+      window.location.href = "dashboard_docente.html";
     } else {
-      // Login (solo email y password)
-      const { data, error } = await _supabase.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
-
-      if (error) throw error;
-
-      console.log("Sesión iniciada:", data.user);
       window.location.href = "bienvenida.html";
     }
+  }
 
   } catch (err) {
     alert("Error: " + err.message);
     console.error(err);
   }
+}
+
+async function cerrarSesion() {
+  const { error } = await _supabase.auth.signOut();
+  if (error) console.error("Error al salir:", error);
+  sessionStorage.clear();
+  window.location.href = "index.html";
 }

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestión de Curso - MathFlow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="container extra-grande">
+  <div style="text-align: left; margin-bottom: 15px;">
+    <button onclick="window.location.href='dashboard_docente.html'" style="width: auto; padding: 8px 15px; background: #ccc;">← Volver</button>
+  </div>
+
+  <h1 id="nombre-curso">Cargando curso...</h1>
+  <p id="desc-curso" style="color: gray; font-size: 14px;"></p>
+
+  <div style="background: #eaffd0; padding: 15px; border-radius: 8px; border: 2px dashed #7CFC00; text-align: center; margin-top: 20px;">
+    <span style="font-size: 14px; color: #555;">Código de Invitación para Alumnos: </span>
+    <strong id="codigo-invitacion" style="font-size: 24px; letter-spacing: 2px; color: #333;">Cargando...</strong>
+  </div>
+
+  <div class="subtitle" style="text-align: left; margin-top: 30px;">👥 Alumnos Inscritos</div>
+  
+  <div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; text-align: left;">
+      <thead>
+        <tr style="border-bottom: 2px solid #7CFC00;">
+          <th style="padding: 10px;">Nombre</th>
+          <th style="padding: 10px;">Último Puntaje</th>
+          <th style="padding: 10px;">Acción</th>
+        </tr>
+      </thead>
+      <tbody id="lista-alumnos">
+        </tbody>
+    </table>
+  </div>
+
+  <div class="subtitle" style="text-align: left; margin-top: 40px;">📚 Contenido del Curso</div>
+  <div id="lista-lecciones-docente"></div>
+  <button class="btn-accion" style="background: #333; color: #7CFC00;">+ Agregar Lección o Evaluación</button>
+</div>
+
+<script>
+  const SUPABASE_URL = 'http://127.0.0.1:54321';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const idCurso = sessionStorage.getItem("cursoGestion");
+    if (!idCurso) { window.location.href = "dashboard_docente.html"; return; }
+
+    cargarInfoCurso(idCurso);
+    cargarAlumnos(idCurso);
+    cargarLecciones(idCurso);
+  });
+
+  async function cargarInfoCurso(id) {
+    const { data } = await _supabase.from('curso').select('nombre_curso, descripcion').eq('id_curso', id).single();
+    if (data) {
+      document.getElementById('nombre-curso').innerText = data.nombre_curso;
+      document.getElementById('desc-curso').innerText = data.descripcion;
+    }
+  }
+
+  async function cargarAlumnos(id) {
+    const tbody = document.getElementById('lista-alumnos');
+    
+    // Consulta relacional compleja: Traemos inscritos y su progreso más reciente
+    const { data, error } = await _supabase
+      .from('inscripcion')
+      .select(`
+        id_usuario,
+        usuario (nombre),
+        progreso_alumno (puntaje_obtenido, fecha_evaluacion)
+      `)
+      .eq('id_curso', id);
+
+    if (error) return;
+
+    tbody.innerHTML = "";
+    data.forEach(item => {
+      // Obtenemos el último puntaje si existe
+      const progresos = item.progreso_alumno || [];
+      const ultimoPuntaje = progresos.length > 0 
+        ? progresos.sort((a,b) => new Date(b.fecha_evaluacion) - new Date(a.fecha_evaluacion))[0].puntaje_obtenido 
+        : "N/A";
+
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = "1px solid #eee";
+      tr.innerHTML = `
+        <td style="padding: 10px;">${item.usuario.nombre}</td>
+        <td style="padding: 10px; font-weight: bold; color: ${ultimoPuntaje < 70 ? 'red' : 'green'}">${ultimoPuntaje}%</td>
+        <td style="padding: 10px;">
+          <button onclick="verMetricasAlumno('${item.id_usuario}')" style="width: auto; padding: 5px 10px; font-size: 11px; background: #7CFC00;">Ver Detalles</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function cargarLecciones(id) {
+    const contenedor = document.getElementById('lista-lecciones-docente');
+    const { data } = await _supabase.from('leccion').select('tema').eq('id_curso', id);
+    
+    contenedor.innerHTML = data && data.length > 0 
+      ? data.map(l => `<div class="leccion-card"><h3>${l.tema}</h3></div>`).join('')
+      : "<p>No hay lecciones creadas.</p>";
+  }
+
+  function verMetricasAlumno(idAlumno) {
+    sessionStorage.setItem("alumnoAMonitorear", idAlumno);
+    window.location.href = "metricas_alumno.html";
+  }
+
+  async function cargarInfoCurso(id) {
+    const { data } = await _supabase.from('curso').select('nombre_curso, descripcion').eq('id_curso', id).single();
+    if (data) {
+      document.getElementById('nombre-curso').innerText = data.nombre_curso;
+      document.getElementById('desc-curso').innerText = data.descripcion;
+      // Inyectar el código de invitación
+      document.getElementById('codigo-invitacion').innerText = id;
+    }
+  }
+</script>
+
+</body>
+</html>

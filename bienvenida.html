@@ -9,12 +9,31 @@
 <body>
 
 <div class="container grande">
+
+  <div style="text-align: right; margin-bottom: 10px;">
+    <button onclick="window.location.href='perfil.html'" 
+            style="width: auto; padding: 6px 12px; font-size: 12px; background: #333; color: #7CFC00; border-radius: 8px;">
+        👤 Mi Perfil
+    </button>
+    <button onclick="cerrarSesion()" 
+            style="width: auto; padding: 6px 12px; font-size: 12px; background: #ff4d4d; color: white; border-radius: 8px;">
+        Cerrar sesión
+    </button>
+  </div>
+
   <h1 id="saludo">Cargando perfil...</h1>
   
   <div id="seccion-algoritmo" style="display:none; margin-bottom: 30px; background: #eaffd0; padding: 15px; border-radius: 15px; border: 2px dashed #7CFC00;">
     <div class="subtitle" style="color: #222; font-weight: bold; margin-bottom: 10px;">🎯 Recomendado para tu progreso:</div>
     <div id="contenedor-recomendaciones"></div>
   </div>
+
+  <div style="margin-bottom: 20px; text-align: left;">
+    <button onclick="mostrarPromptInscripcion()" style="background: #333; color: #7CFC00; width: auto; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">
+        ➕ Unirse a un curso con código
+    </button>
+</div>
+
   <div class="subtitle">Tus cursos asignados:</div>
 
   <div id="contenedor-materias">
@@ -130,7 +149,7 @@
       .from('inscripcion')
       .select(`
         id_curso,
-        curso (
+        curso!fk_curso_inscrito (
           nombre_curso,
           asignatura (
             nombre_asignatura,
@@ -155,16 +174,19 @@
     
     inscripciones.forEach(inscripcion => {
       const datosCurso = inscripcion.curso;
-      const datosAsignatura = datosCurso.asignatura;
+      // Protección: Si el curso no tiene asignatura vinculada, evitamos que el código truene
+      const datosAsignatura = datosCurso?.asignatura;
+
+      if (!datosCurso) return; // Saltar si hay datos corruptos
 
       const divMateria = document.createElement('div');
       divMateria.className = 'materia';
-      divMateria.onclick = () => seleccionarCurso(inscripcion.id_curso, datosAsignatura.nombre_asignatura);
+      divMateria.onclick = () => seleccionarCurso(inscripcion.id_curso, datosAsignatura?.nombre_asignatura || "Sin nombre");
       
       divMateria.innerHTML = `
-        <img src="${datosAsignatura.img_url_asignatura || 'imagenes/default.png'}" alt="${datosAsignatura.nombre_asignatura}">
+        <img src="${datosAsignatura?.img_url_asignatura || 'imagenes/default.png'}" alt="materia">
         <div class="materia-info">
-            <span>${datosAsignatura.nombre_asignatura}</span>
+            <span>${datosAsignatura?.nombre_asignatura || 'Asignatura'}</span>
             <span style="font-size: 12px; color: #444; font-weight: normal;">${datosCurso.nombre_curso}</span>
         </div>
       `;
@@ -178,6 +200,44 @@
     sessionStorage.setItem("nombreMateria", nombreMateria);
     window.location.href = "lecciones.html"; 
   }
+  async function cerrarSesion() {
+  const { error } = await _supabase.auth.signOut();
+  if (error) console.error("Error al salir:", error);
+  sessionStorage.clear();
+  window.location.href = "index.html";
+}
+
+async function mostrarPromptInscripcion() {
+    const respuesta = prompt("Introduce el Código de Invitación del curso:");
+    if (!respuesta) return;
+
+    // Convertimos el texto a número para que la DB no lo rechace
+    const idCurso = parseInt(respuesta.trim());
+    
+    if (isNaN(idCurso)) {
+        alert("❌ El código debe ser un número.");
+        return;
+    }
+
+    const { data: { user } } = await _supabase.auth.getUser();
+
+    const { error } = await _supabase
+        .from('inscripcion')
+        .insert({
+            id_usuario: user.id,
+            id_curso: idCurso
+        });
+
+    if (error) {
+        if (error.code === '23503') alert("❌ Ese código de curso no existe.");
+        else if (error.code === '23505') alert("⚠️ Ya estás en este curso.");
+        else console.error(error);
+    } else {
+        alert("✅ ¡Inscripción exitosa!");
+        location.reload();
+    }
+}
+
 </script>
 
 </body>

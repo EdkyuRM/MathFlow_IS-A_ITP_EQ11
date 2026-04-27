@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Examen</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="examen-container">
+
+  <!-- VERDE (título) -->
+  <div class="examen-header">
+    <h1 id="titulo"></h1>
+  </div>
+
+  <!-- AZUL (preguntas) -->
+  <div class="examen-body">
+    <p>1. Ejemplo de pregunta</p>
+    <input type="text">
+
+    <p>2. Ejemplo de pregunta</p>
+    <input type="text">
+  </div>
+
+  <!-- AMARILLO (botones) -->
+  <div class="examen-footer">
+    <button onclick="volver()">🏠 Inicio</button>
+    <button onclick="enviar()">Enviar respuestas</button>
+  </div>
+
+</div>
+
+<script>
+  const materia = localStorage.getItem("materia");
+  document.getElementById("titulo").innerText =
+    "Examen: " + materia;
+
+  function enviar() {
+    window.location.href = "perfil.html";
+  }
+
+  function volver() {
+    window.location.href = "bienvenida.html";
+  }
+</script>
+
+</body>
+</html>

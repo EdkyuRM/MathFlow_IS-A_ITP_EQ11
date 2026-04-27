@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Métricas del Alumno - MathFlow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="container extra-grande">
+  <div style="text-align: left; margin-bottom: 15px;">
+    <button onclick="window.history.back()" style="width: auto; padding: 8px 15px; background: #ccc;">← Volver a la Lista</button>
+  </div>
+
+  <h1 id="nombre-alumno">Cargando...</h1>
+  <div class="tag-rol">Estudiante</div>
+
+  <div class="subtitle" style="text-align: left; margin-top: 30px;">📈 Historial de Desempeño</div>
+  <div id="contenedor-historial">
+      <p>Consultando progreso...</p>
+  </div>
+
+  <div class="subtitle" style="text-align: left; margin-top: 40px;">💡 Recomendaciones del Algoritmo</div>
+  <p style="font-size: 13px; color: gray; text-align: left;">Contenidos que el sistema ha sugerido a este alumno basado en sus fallos:</p>
+  <div id="contenedor-sugerencias-docente">
+      </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'http://127.0.0.1:54321';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const idAlumno = sessionStorage.getItem("alumnoAMonitorear");
+    if (!idAlumno) { window.location.href = "dashboard_docente.html"; return; }
+
+    cargarDatosBasicos(idAlumno);
+    cargarProgresoDetallado(idAlumno);
+  });
+
+  async function cargarDatosBasicos(uid) {
+    const { data } = await _supabase.from('usuario').select('nombre').eq('id_usuario', uid).single();
+    if (data) document.getElementById('nombre-alumno').innerText = "Reporte de " + data.nombre;
+  }
+
+  async function cargarProgresoDetallado(uid) {
+    const contenedorHistorial = document.getElementById('contenedor-historial');
+    const contenedorSugerencias = document.getElementById('contenedor-sugerencias-docente');
+
+    // 1. Consultar todos los exámenes presentados
+    const { data: progresos, error } = await _supabase
+      .from('progreso_alumno')
+      .select(`
+        puntaje_obtenido,
+        fecha_evaluacion,
+        id_leccion,
+        leccion (tema)
+      `)
+      .eq('id_usuario', uid)
+      .order('fecha_evaluacion', { ascending: false });
+
+    if (error || !progresos || progresos.length === 0) {
+      contenedorHistorial.innerHTML = "<p>El alumno aún no ha realizado evaluaciones.</p>";
+      return;
+    }
+
+    // Dibujar historial
+    contenedorHistorial.innerHTML = progresos.map(p => `
+      <div class="leccion-card" style="border-left: 5px solid ${p.puntaje_obtenido < 70 ? 'red' : '#7CFC00'}; cursor: default;">
+        <div class="leccion-info">
+          <h3>${p.leccion.tema}</h3>
+          <p>Fecha: ${new Date(p.fecha_evaluacion).toLocaleDateString()}</p>
+        </div>
+        <div style="font-weight: bold; font-size: 18px;">${p.puntaje_obtenido}%</div>
+      </div>
+    `).join('');
+
+    // 2. LOGICA DEL ALGORITMO PARA EL DOCENTE
+    // Buscamos lecciones con menos de 90 para mostrar qué recursos se le están recomendando
+    const fallos = progresos.filter(p => p.puntaje_obtenido < 90);
+    
+    if (fallos.length > 0) {
+      const { data: recursos } = await _supabase
+        .from('recurso_refuerzo')
+        .select('*')
+        .in('id_leccion', fallos.map(f => f.id_leccion));
+
+      if (recursos && recursos.length > 0) {
+        contenedorSugerencias.innerHTML = recursos.map(res => `
+          <div class="materia" style="background: #f9f9f9; border: 1px solid #ddd; cursor: default;">
+            <div style="font-size: 20px;">${res.tipo_recurso === 'Video' ? '📺' : '📖'}</div>
+            <div class="materia-info">
+              <span style="font-size: 14px; font-weight: bold;">${res.titulo_recurso}</span>
+              <span style="font-size: 12px; color: gray;">Sugerido automáticamente por bajo puntaje.</span>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        contenedorSugerencias.innerHTML = "<p>No hay recursos de refuerzo asignados para los temas fallidos.</p>";
+      }
+    } else {
+      contenedorSugerencias.innerHTML = "<p>✅ El alumno tiene un desempeño excelente. No requiere refuerzos.</p>";
+    }
+  }
+</script>
+
+</body>
+</html>

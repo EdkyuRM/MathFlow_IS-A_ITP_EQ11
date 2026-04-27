@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Docente - MathFlow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="container grande">
+  <div style="text-align: right; margin-bottom: 10px;">
+    <button onclick="window.location.href='perfil.html'" style="width: auto; padding: 6px 12px; font-size: 12px; background: #333; color: #7CFC00; border-radius: 8px;">👤 Mi Perfil</button>
+    <button onclick="cerrarSesion()" 
+            style="width: auto; padding: 6px 12px; font-size: 12px; background: #ff4d4d; color: white; border-radius: 8px;">
+        Cerrar sesión
+    </button>
+  </div>
+
+  <h1 id="saludo-docente">Panel de Control</h1>
+  <div class="subtitle">Gestión de tus cursos y alumnos</div>
+
+  <div id="contenedor-cursos-docente">
+      <p>Cargando tus cursos...</p>
+  </div>
+
+  <button class="btn-accion" onclick="window.location.href='crear_curso.html'" style="margin-top: 20px; background: #333; color: #7CFC00;">+ Crear Nuevo Curso</button>
+</div>
+
+<script>
+  const SUPABASE_URL = 'http://127.0.0.1:54321';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'; 
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  document.addEventListener('DOMContentLoaded', inicializarDashboard);
+
+  async function inicializarDashboard() {
+
+    // En dashboard_docente.html
+    //console.log("Buscando cursos para el UID:", uid);
+    
+    const { data: authData } = await _supabase.auth.getUser();
+    if (!authData.user) { window.location.href = "index.html"; return; }
+
+    const uidDocente = authData.user.id;
+
+    // Obtener nombre del docente
+    const { data: perfil } = await _supabase.from('usuario').select('nombre').eq('id_usuario', uidDocente).single();
+    if (perfil) document.getElementById('saludo-docente').innerText = "Hola, Prof. " + perfil.nombre;
+
+    cargarCursosDocente(uidDocente);
+  }
+
+  async function cargarCursosDocente(uid) {
+    const contenedor = document.getElementById('contenedor-cursos-docente');
+
+    const { data: cursos, error } = await _supabase
+      .from('curso')
+      .select(`
+        id_curso,
+        nombre_curso,
+        asignatura (nombre_asignatura, img_url_asignatura),
+        inscripcion!fk_curso_inscrito (count) 
+      `)
+      .eq('id_docente', uid);
+
+    console.log("Cursos recibidos:", cursos);
+
+    if (error || !cursos || cursos.length === 0) {
+      contenedor.innerHTML = "<p>Aún no tienes cursos creados.</p>";
+      return;
+    }
+
+    contenedor.innerHTML = "";
+    cursos.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'materia';
+      card.onclick = () => {
+          sessionStorage.setItem("cursoGestion", c.id_curso);
+          window.location.href = "gestion_detallada.html";
+      };
+
+      // --- ESTA ES LA CORRECCIÓN CRÍTICA ---
+      // Verificamos si existe la posición [0] antes de acceder al count
+      const totalAlumnos = (c.inscripcion && c.inscripcion.length > 0) 
+                           ? c.inscripcion[0].count 
+                           : 0;
+
+      card.innerHTML = `
+        <img src="${c.asignatura?.img_url_asignatura || 'imagenes/default.png'}">
+        <div class="materia-info">
+            <span>${c.nombre_curso}</span>
+            <span style="font-size: 12px; color: #444;">${totalAlumnos} Alumnos inscritos</span>
+        </div>
+      `;
+      contenedor.appendChild(card);
+    });
+  }
+  async function cerrarSesion() {
+  const { error } = await _supabase.auth.signOut();
+  if (error) console.error("Error al salir:", error);
+  sessionStorage.clear();
+  window.location.href = "index.html";
+}
+</script>
+</body>
+</html>

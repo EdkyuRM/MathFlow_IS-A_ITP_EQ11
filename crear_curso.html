@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Crear Curso - MathFlow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="container">
+  <div style="text-align: left; margin-bottom: 15px;">
+    <button onclick="window.location.href='dashboard_docente.html'" style="width: auto; padding: 8px 15px; background: #ccc;">← Volver</button>
+  </div>
+
+  <h1>Nuevo Curso</h1>
+  <div class="subtitle">Configura los detalles de tu nueva clase</div>
+
+  <input type="text" id="nombre-curso" placeholder="Nombre del Curso (ej. Cálculo A)">
+  <textarea id="desc-curso" placeholder="Descripción breve..." style="width:100%; height:80px; margin: 10px 0; border-radius:10px; padding:10px; border:none; background:#ddd;"></textarea>
+  
+  <select id="nivel-curso">
+    <option value="Básico">Básico</option>
+    <option value="Intermedio">Intermedio</option>
+    <option value="Avanzado">Avanzado</option>
+  </select>
+
+  <select id="select-asignatura">
+    <option value="">Selecciona la Asignatura Base</option>
+    </select>
+
+  <button class="btn-accion" onclick="guardarCurso()">🚀 Crear Curso y Generar Código</button>
+</div>
+
+<script>
+  const SUPABASE_URL = 'http://127.0.0.1:54321';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Cargar el catálogo de asignaturas para el select
+    const { data: asignaturas } = await _supabase.from('asignatura').select('id_asignatura, nombre_asignatura');
+    const select = document.getElementById('select-asignatura');
+    asignaturas.forEach(asig => {
+      const opt = document.createElement('option');
+      opt.value = asig.id_asignatura;
+      opt.innerText = asig.nombre_asignatura;
+      select.appendChild(opt);
+    });
+  });
+
+  async function guardarCurso() {
+    const { data: { user } } = await _supabase.auth.getUser();
+    const nombre = document.getElementById('nombre-curso').value;
+    const desc = document.getElementById('desc-curso').value;
+    const nivel = document.getElementById('nivel-curso').value;
+    const idAsig = document.getElementById('select-asignatura').value;
+
+    if(!nombre || !idAsig) return alert("Faltan datos obligatorios");
+
+    const { data, error } = await _supabase.from('curso').insert({
+      nombre_curso: nombre,
+      descripcion: desc,
+      nivel: nivel,
+      id_asignatura: idAsig,
+      id_docente: user.id // Relación automática con el docente logueado
+    }).select();
+
+    if (!error) {
+      alert("Curso creado con éxito. El ID de tu curso para que tus alumnos se inscriban es: " + data[0].id_curso);
+      window.location.href = 'dashboard_docente.html';
+    }
+  }
+</script>
+</body>
+</html>
