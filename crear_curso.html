@@ -2,49 +2,120 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Crear Curso - MathFlow</title>
+  <title>Configuración de Cátedra - MathFlow</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-image: url('imagenes/recursos/fondo_general.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+      display: flex; justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .main-wrapper {
+      width: 90%; max-width: 1000px;
+      background: rgba(255, 255, 255, 0.99);
+      min-height: 100vh; padding: 60px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+      text-align: left;
+    }
+    .header-section {
+      border-bottom: 3px solid #7CFC00;
+      padding-bottom: 30px; margin-bottom: 40px;
+    }
+    .form-box {
+      background: #ffffff; border: 1px solid #eee;
+      padding: 40px; border-radius: 4px;
+    }
+    .input-label {
+      font-size: 0.8em; font-weight: bold; color: #666;
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 10px; display: block;
+    }
+    input, textarea, select {
+      width: 100%; padding: 15px;
+      margin-bottom: 25px; border: 1px solid #ddd;
+      background: #fcfcfc; border-radius: 4px;
+      font-size: 1em; box-sizing: border-box;
+      transition: border-color 0.3s;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none; border-color: #7CFC00;
+      background: #fff;
+    }
+    .btn-save {
+      width: 100%; padding: 20px;
+      background: #1a1a1a; color: #7CFC00;
+      border: none; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 2px;
+      cursor: pointer; border-radius: 4px;
+      transition: 0.3s;
+    }
+    .btn-save:hover { background: #333; transform: translateY(-2px); }
+  </style>
 </head>
 <body>
 
-<div class="container">
-  <div style="text-align: left; margin-bottom: 15px;">
-    <button onclick="window.location.href='dashboard_docente.html'" style="width: auto; padding: 8px 15px; background: #ccc;">← Volver</button>
+<div class="main-wrapper">
+  <div style="margin-bottom: 30px;">
+    <button onclick="window.location.href='dashboard_docente.html'" style="padding: 10px 20px; background: #eee; border: none; cursor: pointer; font-weight: bold;">← VOLVER</button>
   </div>
 
-  <h1>Nuevo Curso</h1>
-  <div class="subtitle">Configura los detalles de tu nueva clase</div>
+  <div class="header-section">
+    <h1 style="font-size: 2.8em; margin: 0; color: #1a1a1a; text-transform: uppercase;">Nueva Cátedra</h1>
+    <div style="color: #888; font-weight: bold; letter-spacing: 1px; margin-top: 5px;">CONFIGURACIÓN DE CURSO Y ASIGNATURA</div>
+  </div>
 
-  <input type="text" id="nombre-curso" placeholder="Nombre del Curso (ej. Cálculo A)">
-  <textarea id="desc-curso" placeholder="Descripción breve..." style="width:100%; height:80px; margin: 10px 0; border-radius:10px; padding:10px; border:none; background:#ddd;"></textarea>
-  
-  <select id="nivel-curso">
-    <option value="Básico">Básico</option>
-    <option value="Intermedio">Intermedio</option>
-    <option value="Avanzado">Avanzado</option>
-  </select>
+  <div class="form-box">
+    <span class="input-label">Identificador del Curso</span>
+    <input type="text" id="nombre-curso" placeholder="EJ. CÁLCULO DIFERENCIAL - SECCIÓN A">
 
-  <select id="select-asignatura">
-    <option value="">Selecciona la Asignatura Base</option>
-    </select>
+    <span class="input-label">Descripción Académica</span>
+    <textarea id="desc-curso" placeholder="DETALLES SOBRE EL CONTENIDO DEL CURSO..." style="height: 100px; resize: none;"></textarea>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <span class="input-label">Nivel de Complejidad</span>
+        <select id="nivel-curso">
+          <option value="Básico">NIVEL BÁSICO</option>
+          <option value="Intermedio">NIVEL INTERMEDIO</option>
+          <option value="Avanzado">NIVEL AVANZADO</option>
+        </select>
+      </div>
+      <div>
+        <span class="input-label">Asignatura Base</span>
+        <select id="select-asignatura">
+          <option value="">SINCRONIZANDO CATÁLOGO...</option>
+        </select>
+      </div>
+    </div>
 
-  <button class="btn-accion" onclick="guardarCurso()">🚀 Crear Curso y Generar Código</button>
+    <button class="btn-save" onclick="guardarCurso()">REGISTRAR CURSO Y GENERAR ACCESO</button>
+  </div>
 </div>
 
 <script>
   const SUPABASE_URL = 'http://127.0.0.1:54321';
-  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'; 
   const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   document.addEventListener('DOMContentLoaded', async () => {
-    // Cargar el catálogo de asignaturas para el select
-    const { data: asignaturas } = await _supabase.from('asignatura').select('id_asignatura, nombre_asignatura');
+    // Sincronización dinámica de asignaturas
+    const { data: asignaturas, error } = await _supabase.from('asignatura').select('id_asignatura, nombre_asignatura');
     const select = document.getElementById('select-asignatura');
+    
+    if (error) {
+      select.innerHTML = '<option value="">ERROR AL CARGAR ASIGNATURAS</option>';
+      return;
+    }
+
+    select.innerHTML = '<option value="">SELECCIONAR ASIGNATURA</option>';
     asignaturas.forEach(asig => {
       const opt = document.createElement('option');
       opt.value = asig.id_asignatura;
-      opt.innerText = asig.nombre_asignatura;
+      opt.innerText = asig.nombre_asignatura.toUpperCase();
       select.appendChild(opt);
     });
   });
@@ -56,18 +127,20 @@
     const nivel = document.getElementById('nivel-curso').value;
     const idAsig = document.getElementById('select-asignatura').value;
 
-    if(!nombre || !idAsig) return alert("Faltan datos obligatorios");
+    if(!nombre || !idAsig) return alert("TODOS LOS CAMPOS MARCADOS SON OBLIGATORIOS");
 
     const { data, error } = await _supabase.from('curso').insert({
       nombre_curso: nombre,
       descripcion: desc,
       nivel: nivel,
       id_asignatura: idAsig,
-      id_docente: user.id // Relación automática con el docente logueado
+      id_docente: user.id
     }).select();
 
-    if (!error) {
-      alert("Curso creado con éxito. El ID de tu curso para que tus alumnos se inscriban es: " + data[0].id_curso);
+    if (error) {
+      alert("ERROR AL REGISTRAR EL CURSO: " + error.message);
+    } else {
+      alert("ÉXITO: CURSO CREADO. CÓDIGO DE INSCRIPCIÓN: " + data[0].id_curso);
       window.location.href = 'dashboard_docente.html';
     }
   }

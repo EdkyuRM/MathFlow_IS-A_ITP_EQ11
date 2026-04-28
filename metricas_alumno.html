@@ -2,29 +2,63 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Métricas del Alumno - MathFlow</title>
+  <title>Analítica de Estudiante - MathFlow</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-image: url('imagenes/recursos/fondo_general.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+      display: flex; justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .analytics-wrapper {
+      width: 94%; max-width: 1400px;
+      background: rgba(255, 255, 255, 0.99);
+      min-height: 100vh; padding: 60px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+    }
+    .data-table {
+      width: 100%; border-collapse: collapse; margin-top: 30px;
+    }
+    th {
+      text-align: left; padding: 15px; background: #1a1a1a;
+      color: #7CFC00; text-transform: uppercase; font-size: 0.8em;
+    }
+    td { padding: 15px; border-bottom: 1px solid #eee; }
+    .recommendation-box {
+      border: 1px dashed #7CFC00; padding: 25px;
+      background: #f0fff0; margin-top: 40px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container extra-grande">
-  <div style="text-align: left; margin-bottom: 15px;">
-    <button onclick="window.history.back()" style="width: auto; padding: 8px 15px; background: #ccc;">← Volver a la Lista</button>
+<div class="analytics-wrapper">
+  <button onclick="window.history.back()" style="padding: 10px 20px; background: #eee; border: none; font-weight: bold; cursor: pointer;">← VOLVER</button>
+  
+  <h1 id="nombre-alumno" style="font-size: 3em; text-transform: uppercase; margin: 30px 0 10px 0;">CONSULTANDO ALUMNO...</h1>
+  <div style="font-weight: bold; color: #666; letter-spacing: 2px;">EXPEDIENTE DE DESEMPEÑO ACADÉMICO</div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>FECHA DE EVALUACIÓN</th>
+        <th>LECCIÓN / UNIDAD</th>
+        <th>CALIFICACIÓN</th>
+      </tr>
+    </thead>
+    <tbody id="historial-tabla"></tbody>
+  </table>
+
+  <div class="recommendation-box">
+    <h3 style="margin-top: 0; text-transform: uppercase; letter-spacing: 1px;">Sugerencias del Algoritmo</h3>
+    <div id="lista-recomendaciones" style="font-size: 0.9em; color: #444;">
+      EL SISTEMA NO HA GENERADO ALERTAS PARA ESTE ESTUDIANTE.
+    </div>
   </div>
-
-  <h1 id="nombre-alumno">Cargando...</h1>
-  <div class="tag-rol">Estudiante</div>
-
-  <div class="subtitle" style="text-align: left; margin-top: 30px;">📈 Historial de Desempeño</div>
-  <div id="contenedor-historial">
-      <p>Consultando progreso...</p>
-  </div>
-
-  <div class="subtitle" style="text-align: left; margin-top: 40px;">💡 Recomendaciones del Algoritmo</div>
-  <p style="font-size: 13px; color: gray; text-align: left;">Contenidos que el sistema ha sugerido a este alumno basado en sus fallos:</p>
-  <div id="contenedor-sugerencias-docente">
-      </div>
 </div>
 
 <script>
@@ -33,78 +67,30 @@
   const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   document.addEventListener('DOMContentLoaded', async () => {
-    const idAlumno = sessionStorage.getItem("alumnoAMonitorear");
-    if (!idAlumno) { window.location.href = "dashboard_docente.html"; return; }
+    const uid = sessionStorage.getItem("alumnoAMonitorear");
+    
+    const { data: usuario } = await _supabase.from('usuario').select('nombre').eq('id_usuario', uid).single();
+    if (usuario) document.getElementById('nombre-alumno').innerText = usuario.nombre.toUpperCase();
 
-    cargarDatosBasicos(idAlumno);
-    cargarProgresoDetallado(idAlumno);
-  });
-
-  async function cargarDatosBasicos(uid) {
-    const { data } = await _supabase.from('usuario').select('nombre').eq('id_usuario', uid).single();
-    if (data) document.getElementById('nombre-alumno').innerText = "Reporte de " + data.nombre;
-  }
-
-  async function cargarProgresoDetallado(uid) {
-    const contenedorHistorial = document.getElementById('contenedor-historial');
-    const contenedorSugerencias = document.getElementById('contenedor-sugerencias-docente');
-
-    // 1. Consultar todos los exámenes presentados
-    const { data: progresos, error } = await _supabase
+    const { data: progresos } = await _supabase
       .from('progreso_alumno')
-      .select(`
-        puntaje_obtenido,
-        fecha_evaluacion,
-        id_leccion,
-        leccion (tema)
-      `)
+      .select('puntaje_obtenido, fecha_evaluacion, leccion(tema)')
       .eq('id_usuario', uid)
       .order('fecha_evaluacion', { ascending: false });
 
-    if (error || !progresos || progresos.length === 0) {
-      contenedorHistorial.innerHTML = "<p>El alumno aún no ha realizado evaluaciones.</p>";
-      return;
+    const tbody = document.getElementById('historial-tabla');
+    if (progresos) {
+      progresos.forEach(p => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${new Date(p.fecha_evaluacion).toLocaleDateString()}</td>
+          <td style="font-weight: bold;">${p.leccion.tema.toUpperCase()}</td>
+          <td style="color: ${p.puntaje_obtenido < 70 ? 'red' : 'green'}; font-weight: bold;">${p.puntaje_obtenido}%</td>
+        `;
+        tbody.appendChild(row);
+      });
     }
-
-    // Dibujar historial
-    contenedorHistorial.innerHTML = progresos.map(p => `
-      <div class="leccion-card" style="border-left: 5px solid ${p.puntaje_obtenido < 70 ? 'red' : '#7CFC00'}; cursor: default;">
-        <div class="leccion-info">
-          <h3>${p.leccion.tema}</h3>
-          <p>Fecha: ${new Date(p.fecha_evaluacion).toLocaleDateString()}</p>
-        </div>
-        <div style="font-weight: bold; font-size: 18px;">${p.puntaje_obtenido}%</div>
-      </div>
-    `).join('');
-
-    // 2. LOGICA DEL ALGORITMO PARA EL DOCENTE
-    // Buscamos lecciones con menos de 90 para mostrar qué recursos se le están recomendando
-    const fallos = progresos.filter(p => p.puntaje_obtenido < 90);
-    
-    if (fallos.length > 0) {
-      const { data: recursos } = await _supabase
-        .from('recurso_refuerzo')
-        .select('*')
-        .in('id_leccion', fallos.map(f => f.id_leccion));
-
-      if (recursos && recursos.length > 0) {
-        contenedorSugerencias.innerHTML = recursos.map(res => `
-          <div class="materia" style="background: #f9f9f9; border: 1px solid #ddd; cursor: default;">
-            <div style="font-size: 20px;">${res.tipo_recurso === 'Video' ? '📺' : '📖'}</div>
-            <div class="materia-info">
-              <span style="font-size: 14px; font-weight: bold;">${res.titulo_recurso}</span>
-              <span style="font-size: 12px; color: gray;">Sugerido automáticamente por bajo puntaje.</span>
-            </div>
-          </div>
-        `).join('');
-      } else {
-        contenedorSugerencias.innerHTML = "<p>No hay recursos de refuerzo asignados para los temas fallidos.</p>";
-      }
-    } else {
-      contenedorSugerencias.innerHTML = "<p>✅ El alumno tiene un desempeño excelente. No requiere refuerzos.</p>";
-    }
-  }
+  });
 </script>
-
 </body>
 </html>

@@ -5,127 +5,160 @@
   <title>Temario - MathFlow</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-image: url('imagenes/recursos/fondo_general.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+      display: flex; justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .main-wrapper {
+      width: 95%; max-width: 1400px;
+      background: rgba(255, 255, 255, 0.98);
+      min-height: 100vh; padding: 60px;
+      box-shadow: 0 0 50px rgba(0,0,0,0.3);
+      box-sizing: border-box;
+    }
+    .header-section {
+      border-bottom: 3px solid #7CFC00;
+      padding-bottom: 30px; margin-bottom: 50px;
+      text-align: left;
+    }
+    .info-block {
+      background: #1a1a1a;
+      color: #7CFC00;
+      padding: 12px 25px;
+      border-radius: 4px;
+      display: inline-block;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 15px;
+    }
+    .content-container {
+      display: grid; grid-template-columns: 1fr; gap: 40px;
+    }
+    .data-box {
+      border: 1px solid #ddd;
+      padding: 40px; border-radius: 10px;
+      background: #fff; min-height: 300px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container extra-grande">
-  <div style="text-align: left; margin-bottom: 15px;">
-    <button onclick="window.location.href='bienvenida.html'" style="width: auto; padding: 8px 15px; background: #ccc; color: #333;">← Volver</button>
+<div class="main-wrapper">
+  <div style="text-align: left; margin-bottom: 40px;">
+    <button onclick="window.location.href='bienvenida.html'" style="padding: 10px 25px; background: #333; color: #7CFC00; border: none; font-weight: bold; cursor: pointer; border-radius: 4px;">VOLVER</button>
   </div>
 
-  <h1 id="titulo-curso">Cargando curso...</h1>
-  <div id="docente-info" class="docente-info">Docente: Cargando...</div>
-
-  <div style="text-align: left; font-weight: bold; font-size: 14px; margin-top: 10px;">Tu progreso:</div>
-  <div class="progress-container">
-    <div id="barra-progreso" class="progress-fill"></div>
-  </div>
-  <div style="text-align: right; font-size: 12px; color: gray; margin-bottom: 25px;">
-    <span id="texto-progreso">0</span>% Completado
+  <div class="header-section">
+    <h1 id="titulo-curso" style="font-size: 3.5em; margin: 0; color: #1a1a1a; text-transform: uppercase;">CONSULTANDO CURSO...</h1>
+    <div id="docente-info" class="info-block">CARGANDO INFORMACIÓN DEL DOCENTE...</div>
   </div>
 
-  <div class="subtitle" style="text-align: left;">Temario del curso</div>
-  
-  <div id="contenedor-lecciones">
-      <p>Cargando lecciones...</p>
+  <div class="content-container">
+    <div class="data-box">
+      <h2 style="text-transform: uppercase; font-size: 1.1em; color: #666; margin-bottom: 25px;">Estado de Avance Académico</h2>
+      <div class="progress-container" style="height: 20px; background: #eee; border-radius: 5px;">
+        <div id="barra-progreso" class="progress-fill" style="height: 100%; background: #7CFC00; width: 0%; border-radius: 5px; transition: width 1.5s ease-in-out;"></div>
+      </div>
+      <div style="text-align: right; margin-top: 10px; font-size: 1.2em; font-weight: bold;">
+        COMPLETADO: <span id="texto-progreso">0</span>%
+      </div>
+    </div>
+
+    <div class="data-box">
+      <h2 style="text-transform: uppercase; font-size: 1.1em; color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Temario de la Asignatura</h2>
+      <div id="contenedor-lecciones">
+        <p style="color: #999;">Sincronizando con el servidor...</p>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-  // Configuración de Supabase
   const SUPABASE_URL = 'http://127.0.0.1:54321';
-  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'; // ¡Pon tu llave de nuevo!
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'; 
   const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  document.addEventListener('DOMContentLoaded', inicializarLecciones);
-
-  async function inicializarLecciones() {
-    // 1. Verificamos sesión
-    const { data: authData } = await _supabase.auth.getUser();
-    if (!authData.user) {
-      window.location.href = "index.html";
-      return;
-    }
-
-    // 2. Recuperamos el ID del curso que clickeamos en la pantalla anterior
+  document.addEventListener('DOMContentLoaded', async () => {
     const idCurso = sessionStorage.getItem("cursoActual");
+    if (!idCurso) { window.location.href = "bienvenida.html"; return; }
     
-    if (!idCurso) {
-      alert("No se seleccionó ningún curso.");
-      window.location.href = "bienvenida.html";
-      return;
-    }
-
+    // Ejecutamos las lecturas dinámicas
     cargarDatosCurso(idCurso);
     cargarTemario(idCurso);
-  }
+  });
 
-  async function cargarDatosCurso(idCurso) {
-    // Consulta relacional: Traemos el curso y el nombre de su docente
+  async function cargarDatosCurso(id) {
+    // Le decimos a Supabase que cruce EXACTAMENTE por el puente llamado 'fk_docente'
     const { data: curso, error } = await _supabase
       .from('curso')
       .select(`
         nombre_curso,
-        usuario (nombre)
+        usuario!fk_docente (nombre) 
       `)
-      .eq('id_curso', idCurso)
+      .eq('id_curso', id)
       .single();
 
-    if (curso) {
-      document.getElementById('titulo-curso').innerText = curso.nombre_curso;
-      // usuario es un objeto porque es una Foreign Key
-      document.getElementById('docente-info').innerText = "Docente: " + (curso.usuario?.nombre || "Sin asignar");
-    }
-  }
-
-  async function cargarTemario(idCurso) {
-    const contenedor = document.getElementById('contenedor-lecciones');
-
-    // Consultamos las lecciones de este curso específico
-    const { data: lecciones, error } = await _supabase
-      .from('leccion')
-      .select('id_leccion, tema, contenido')
-      .eq('id_curso', idCurso)
-      .order('id_leccion', { ascending: true }); // Las ordenamos lógicamente
-
-    if (error || lecciones.length === 0) {
-      contenedor.innerHTML = "<p>Aún no hay lecciones para este curso.</p>";
+    if (error) {
+      console.error("Error al cargar el curso:", error);
+      document.getElementById('titulo-curso').innerText = "ERROR DE CONEXIÓN";
+      document.getElementById('docente-info').innerText = "REVISA LA CONSOLA";
       return;
     }
 
-    contenedor.innerHTML = ""; // Limpiamos
-
-    lecciones.forEach((leccion, index) => {
-      const divLeccion = document.createElement('div');
-      divLeccion.className = 'leccion-card';
-      // Pasamos el ID para la futura pantalla de contenido/evaluación
-      divLeccion.onclick = () => abrirLeccion(leccion.id_leccion);
-
-      divLeccion.innerHTML = `
-        <div class="leccion-info">
-            <h3>Tema ${index + 1}: ${leccion.tema}</h3>
-            <p>${leccion.contenido.substring(0, 50)}...</p>
-        </div>
-        <div style="color: #7CFC00; font-weight: bold; font-size: 20px;">▶</div>
-      `;
-      contenedor.appendChild(divLeccion);
-    });
-
-    // Simulador de Progreso para el Sprint 2
-    // Aquí es donde entrará el algoritmo más adelante. Por ahora lo fijaremos en 35%
-    setTimeout(() => {
-      document.getElementById('barra-progreso').style.width = '35%';
-      document.getElementById('texto-progreso').innerText = '35';
-    }, 300);
+    if (curso) {
+      document.getElementById('titulo-curso').innerText = curso.nombre_curso.toUpperCase();
+      const nombreProfesor = (curso.usuario && curso.usuario.nombre) ? curso.usuario.nombre : "POR ASIGNAR";
+      document.getElementById('docente-info').innerText = "DOCENTE A CARGO: " + nombreProfesor.toUpperCase();
+    }
   }
 
-  function abrirLeccion(idLeccion) {
-    // Guardamos la lección actual
-    sessionStorage.setItem("leccionActual", idLeccion);
-    //Redirección a la página de contenido
-    window.location.href = "contenido.html";
+  async function cargarTemario(id) {
+    const contenedor = document.getElementById('contenedor-lecciones');
+    
+    const { data: lecciones, error } = await _supabase
+      .from('leccion')
+      .select('id_leccion, tema, contenido')
+      .eq('id_curso', id)
+      .order('id_leccion', { ascending: true });
+
+    // Rastreador de errores para el temario
+    if (error) {
+      console.error("Error al cargar lecciones:", error);
+      contenedor.innerHTML = "<div style='padding: 30px; background: #ffebee; color: #c62828; text-align: center;'>Error al cargar los temas.</div>";
+      return;
+    }
+
+    if (!lecciones || lecciones.length === 0) {
+      contenedor.innerHTML = "<div style='padding: 30px; background: #f9f9f9; text-align: center; color: #888;'>No se han cargado temas para esta asignatura todavía.</div>";
+      return;
+    }
+
+    contenedor.innerHTML = "";
+    lecciones.forEach((leccion, index) => {
+      const row = document.createElement('div');
+      row.style = "display: flex; justify-content: space-between; align-items: center; padding: 25px; border-bottom: 1px solid #eee; transition: background 0.3s; cursor: pointer;";
+      row.onmouseover = () => row.style.background = "#fcfcfc";
+      row.onmouseout = () => row.style.background = "transparent";
+      row.onclick = () => {
+        sessionStorage.setItem("leccionActual", leccion.id_leccion);
+        window.location.href = "contenido.html";
+      };
+
+      row.innerHTML = `
+        <div style="text-align: left;">
+          <div style="color: #7CFC00; font-size: 0.75em; font-weight: bold; letter-spacing: 1px;">MÓDULO ${index + 1}</div>
+          <div style="font-size: 1.3em; font-weight: bold; color: #1a1a1a;">${leccion.tema.toUpperCase()}</div>
+        </div>
+        <div style="background: #1a1a1a; color: #7CFC00; padding: 8px 20px; font-size: 0.8em; font-weight: bold; border-radius: 4px;">INICIAR</div>
+      `;
+      contenedor.appendChild(row);
+    });
   }
 </script>
-
 </body>
 </html>

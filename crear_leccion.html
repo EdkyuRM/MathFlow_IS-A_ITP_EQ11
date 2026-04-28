@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Diseño de Contenido - MathFlow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-image: url('imagenes/recursos/fondo_general.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+      display: flex; justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .main-wrapper {
+      width: 94%; max-width: 1200px;
+      background: rgba(255, 255, 255, 0.99);
+      min-height: 100vh; padding: 60px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+    }
+    .header-section {
+      border-bottom: 3px solid #7CFC00;
+      padding-bottom: 30px; margin-bottom: 40px;
+    }
+    .input-label {
+      font-size: 0.85em; font-weight: bold; color: #444;
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 12px; display: block;
+    }
+    input, textarea, select {
+      width: 100%; padding: 18px;
+      margin-bottom: 25px; border: 1px solid #ddd;
+      background: #f9f9f9; border-radius: 4px;
+      font-size: 1em; box-sizing: border-box;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none; border-color: #7CFC00; background: #fff;
+    }
+    .resource-section {
+      background: #fcfcfc; border: 1px dashed #ccc;
+      padding: 30px; border-radius: 4px; margin-bottom: 30px;
+    }
+    .btn-primary {
+      width: 100%; padding: 22px;
+      background: #1a1a1a; color: #7CFC00;
+      border: none; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 2px;
+      cursor: pointer; border-radius: 4px;
+      transition: 0.3s;
+    }
+    .btn-primary:hover { background: #333; transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+  <div style="margin-bottom: 30px;">
+    <button onclick="window.location.href='gestion_detallada.html'" style="padding: 10px 20px; background: #eee; border: none; font-weight: bold; cursor: pointer;">← VOLVER</button>
+  </div>
+
+  <div class="header-section">
+    <h1 style="font-size: 2.8em; margin: 0; color: #1a1a1a; text-transform: uppercase;">Nueva Unidad Temática</h1>
+    <div style="color: #888; font-weight: bold; letter-spacing: 1px; margin-top: 5px;">DEFINICIÓN DE CONTENIDO TEÓRICO Y RECURSOS</div>
+  </div>
+
+  <div style="max-width: 900px;">
+    <span class="input-label">Título de la Lección</span>
+    <input type="text" id="tema" placeholder="EJ. INTEGRALES INDEFINIDAS">
+
+    <span class="input-label">Cuerpo de Conocimiento (Teoría)</span>
+    <textarea id="contenido" placeholder="EXPLICA EL TEMA CON DETALLE PARA EL ESTUDIANTE..." style="height: 250px; resize: none;"></textarea>
+    
+    <div class="resource-section">
+      <h3 style="margin-top: 0; font-size: 1em; text-transform: uppercase; color: #666; margin-bottom: 20px;">Recurso Didáctico de Refuerzo</h3>
+      
+      <span class="input-label">Descripción del Recurso</span>
+      <textarea id="res_descripcion" placeholder="¿DE QUÉ TRATA ESTE MATERIAL ADICIONAL?" style="height: 80px; resize: none;"></textarea>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+        <div>
+          <span class="input-label">Enlace (URL)</span>
+          <input type="url" id="res_url" placeholder="HTTPS://...">
+        </div>
+        <div>
+          <span class="input-label">Tipo</span>
+          <select id="res_tipo">
+            <option value="Video">VIDEO</option>
+            <option value="Lectura">LECTURA</option>
+            <option value="Enlace">ENLACE EXTERNO</option>
+            <option value="Documento">DOCUMENTO PDF</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="guardarLeccion()">GUARDAR UNIDAD Y CONTINUAR A EVALUACIÓN</button>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'http://127.0.0.1:54321';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'; 
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function guardarLeccion() {
+    const idCurso = sessionStorage.getItem("cursoGestion");
+    const tema = document.getElementById('tema').value;
+    const contenido = document.getElementById('contenido').value;
+
+    // Datos del recurso
+    const resDesc = document.getElementById('res_descripcion').value;
+    const resUrl = document.getElementById('res_url').value;
+    const resTipo = document.getElementById('res_tipo').value;
+
+    if(!tema || !contenido) return alert("EL TÍTULO Y LA TEORÍA SON OBLIGATORIOS.");
+
+    try {
+      // 1. Insertar Lección
+      const { data: leccion, error: errL } = await _supabase.from('leccion').insert({
+        id_curso: idCurso,
+        tema: tema,
+        contenido: contenido
+      }).select().single();
+
+      if (errL) throw errL;
+
+      // 2. Insertar Recurso (Solo si hay URL)
+      if (resUrl && resUrl.trim() !== "") {
+        const { error: errR } = await _supabase.from('recurso_refuerzo').insert({
+          id_leccion: leccion.id_leccion,
+          titulo: ("REFUERZO: " + tema).toUpperCase(),
+          descripcion: resDesc,
+          url: resUrl,
+          tipo: resTipo
+        });
+        if (errR) console.error("FALLO AL VINCULAR RECURSO:", errR);
+      }
+
+      // 3. Redirigir
+      sessionStorage.setItem("leccionRecienCreada", leccion.id_leccion);
+      window.location.href = 'crear_evaluacion.html';
+
+    } catch (err) {
+      alert("ERROR DE SINCRONIZACIÓN: " + err.message);
+    }
+  }
+</script>
+</body>
+</html>

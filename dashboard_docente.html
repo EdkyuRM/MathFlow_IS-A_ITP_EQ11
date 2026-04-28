@@ -5,26 +5,108 @@
   <title>Panel Docente - MathFlow</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-image: url('imagenes/recursos/fondo_general.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+      display: flex; justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .dashboard-wrapper {
+      width: 95%; max-width: 1500px;
+      background: rgba(255, 255, 255, 0.98);
+      min-height: 100vh; padding: 60px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+    }
+    .dashboard-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 3px solid #7CFC00;
+      padding-bottom: 30px; margin-bottom: 50px;
+    }
+    .user-actions {
+      display: flex; gap: 15px;
+    }
+    .section-title-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;
+    }
+    .content-box {
+      background: #fff; border: 1px solid #ddd;
+      padding: 40px; border-radius: 4px;
+      min-height: 400px;
+    }
+    .btn-action {
+      background: #1a1a1a; color: #7CFC00;
+      border: none; padding: 12px 25px;
+      font-weight: bold; text-transform: uppercase;
+      letter-spacing: 1px; cursor: pointer;
+      border-radius: 4px; transition: 0.3s;
+    }
+    .btn-action:hover { background: #333; }
+
+    /* Rejilla de Cursos */
+    .course-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 30px;
+    }
+    .course-card {
+      background: #fcfcfc; border: 1px solid #eee;
+      padding: 30px; cursor: pointer;
+      display: flex; flex-direction: column; gap: 20px;
+      transition: all 0.3s;
+    }
+    .course-card:hover {
+      border-color: #7CFC00;
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    }
+    .course-card img {
+      width: 100%; height: 180px; object-fit: cover;
+      border-radius: 4px; border: 1px solid #ddd;
+    }
+    .course-info h3 {
+      margin: 0; font-size: 1.4em; color: #1a1a1a;
+      letter-spacing: 1px;
+    }
+    .course-stats {
+      font-size: 0.85em; font-weight: bold; color: #666;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container grande">
-  <div style="text-align: right; margin-bottom: 10px;">
-    <button onclick="window.location.href='perfil.html'" style="width: auto; padding: 6px 12px; font-size: 12px; background: #333; color: #7CFC00; border-radius: 8px;">👤 Mi Perfil</button>
-    <button onclick="cerrarSesion()" 
-            style="width: auto; padding: 6px 12px; font-size: 12px; background: #ff4d4d; color: white; border-radius: 8px;">
-        Cerrar sesión
-    </button>
+<div class="dashboard-wrapper">
+  <header class="dashboard-header">
+    <div style="text-align: left;">
+      <h1 id="saludo-docente" style="font-size: 3.2em; margin: 0; color: #1a1a1a; text-transform: uppercase;">SINCRONIZANDO PANEL...</h1>
+      <div style="color: #666; letter-spacing: 2px; font-weight: bold; font-size: 0.9em;">SISTEMA DE GESTIÓN DE CÁTEDRAS</div>
+    </div>
+    <div class="user-actions">
+      <button onclick="window.location.href='perfil.html'" class="btn-action" style="background: #eee; color: #333;">MI PERFIL</button>
+      <button onclick="cerrarSesion()" class="btn-action" style="background: #ff4d4d; color: white;">CERRAR SESIÓN</button>
+    </div>
+  </header>
+
+  <div class="content-box">
+    <div class="section-title-bar">
+      <h2 style="text-transform: uppercase; font-size: 1.2em; letter-spacing: 2px; color: #1a1a1a; margin: 0;">
+        MIS CURSOS ACTIVOS
+      </h2>
+      <button onclick="window.location.href='crear_curso.html'" class="btn-action" style="font-size: 0.85em; padding: 10px 25px;">
+        + CREAR NUEVO CURSO
+      </button>
+    </div>
+
+    <div id="contenedor-cursos-docente">
+      <div style="text-align: center; padding: 100px; color: #999; text-transform: uppercase; letter-spacing: 2px;">
+        CONSULTANDO REGISTROS DOCENTES...
+      </div>
+    </div>
   </div>
-
-  <h1 id="saludo-docente">Panel de Control</h1>
-  <div class="subtitle">Gestión de tus cursos y alumnos</div>
-
-  <div id="contenedor-cursos-docente">
-      <p>Cargando tus cursos...</p>
-  </div>
-
-  <button class="btn-accion" onclick="window.location.href='crear_curso.html'" style="margin-top: 20px; background: #333; color: #7CFC00;">+ Crear Nuevo Curso</button>
 </div>
 
 <script>
@@ -32,73 +114,79 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'; 
   const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  document.addEventListener('DOMContentLoaded', inicializarDashboard);
+  document.addEventListener('DOMContentLoaded', async () => {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) { window.location.href = "acceso.html"; return; }
 
-  async function inicializarDashboard() {
-    
-    const { data: authData } = await _supabase.auth.getUser();
-    if (!authData.user) { window.location.href = "index.html"; return; }
+    cargarPerfil(user.id);
+    cargarCursosDocente(user.id);
+  });
 
-    const uidDocente = authData.user.id;
-
-    // Obtener nombre del docente
-    const { data: perfil } = await _supabase.from('usuario').select('nombre').eq('id_usuario', uidDocente).single();
-    if (perfil) document.getElementById('saludo-docente').innerText = "Hola, Prof. " + perfil.nombre;
-
-    cargarCursosDocente(uidDocente);
+  async function cargarPerfil(uid) {
+    const { data } = await _supabase.from('usuario').select('nombre').eq('id_usuario', uid).single();
+    if (data) {
+      document.getElementById('saludo-docente').innerText = "HOLA, PROF. " + data.nombre.toUpperCase();
+    }
   }
 
   async function cargarCursosDocente(uid) {
     const contenedor = document.getElementById('contenedor-cursos-docente');
 
+    // Consulta con alias explícito para evitar ambigüedades PGRST201
     const { data: cursos, error } = await _supabase
       .from('curso')
       .select(`
         id_curso,
         nombre_curso,
         asignatura (nombre_asignatura, img_url_asignatura),
-        inscripcion!fk_curso_inscrito (count) 
+        inscripcion!fk_curso_inscrito (count)
       `)
       .eq('id_docente', uid);
 
-    console.log("Cursos recibidos:", cursos);
-
     if (error || !cursos || cursos.length === 0) {
-      contenedor.innerHTML = "<p>Aún no tienes cursos creados.</p>";
+      contenedor.innerHTML = `
+        <div style="text-align: center; padding: 80px; border: 2px dashed #eee; color: #aaa;">
+          NO SE HAN DETECTADO CURSOS BAJO SU TITULARIDAD. INICIE LA CREACIÓN DE UNO PARA COMENZAR.
+        </div>`;
       return;
     }
 
     contenedor.innerHTML = "";
+    const grid = document.createElement('div');
+    grid.className = 'course-grid';
+
     cursos.forEach(c => {
       const card = document.createElement('div');
-      card.className = 'materia';
+      card.className = 'course-card';
       card.onclick = () => {
           sessionStorage.setItem("cursoGestion", c.id_curso);
           window.location.href = "gestion_detallada.html";
       };
 
-      // --- ESTA ES LA CORRECCIÓN CRÍTICA ---
-      // Verificamos si existe la posición [0] antes de acceder al count
-      const totalAlumnos = (c.inscripcion && c.inscripcion.length > 0) 
-                           ? c.inscripcion[0].count 
-                           : 0;
+      const totalAlumnos = (c.inscripcion && c.inscripcion.length > 0) ? c.inscripcion[0].count : 0;
 
       card.innerHTML = `
-        <img src="${c.asignatura?.img_url_asignatura || 'imagenes/default.png'}">
-        <div class="materia-info">
-            <span>${c.nombre_curso}</span>
-            <span style="font-size: 12px; color: #444;">${totalAlumnos} Alumnos inscritos</span>
+        <img src="${c.asignatura?.img_url_asignatura || 'imagenes/recursos/default.png'}">
+        <div class="course-info">
+            <h3>${c.nombre_curso.toUpperCase()}</h3>
+            <div class="course-stats" style="margin-top: 10px;">
+              MATRÍCULA: ${totalAlumnos} ALUMNOS
+            </div>
+        </div>
+        <div style="background: #1a1a1a; color: #7CFC00; padding: 10px; text-align: center; font-size: 0.8em; font-weight: bold; border-radius: 4px;">
+          ADMINISTRAR CURSO
         </div>
       `;
-      contenedor.appendChild(card);
+      grid.appendChild(card);
     });
+    contenedor.appendChild(grid);
   }
+
   async function cerrarSesion() {
-  const { error } = await _supabase.auth.signOut();
-  if (error) console.error("Error al salir:", error);
-  sessionStorage.clear();
-  window.location.href = "index.html";
-}
+    await _supabase.auth.signOut();
+    sessionStorage.clear();
+    window.location.href = "index.html";
+  }
 </script>
 </body>
 </html>

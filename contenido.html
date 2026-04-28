@@ -2,26 +2,76 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Lección - MathFlow</title>
+  <title>Material de Estudio - MathFlow</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-image: url('imagenes/recursos/fondo_general.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+      display: flex; justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .full-wrapper {
+      width: 94%; max-width: 1300px;
+      background: rgba(255, 255, 255, 0.98);
+      min-height: 100vh; padding: 60px;
+      box-shadow: 0 0 50px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+    }
+    .lesson-header {
+      border-bottom: 3px solid #7CFC00;
+      padding-bottom: 30px; margin-bottom: 40px;
+    }
+    .theory-box {
+      background: #fff; border: 1px solid #ddd;
+      padding: 40px; border-radius: 4px;
+      line-height: 1.8; color: #333; font-size: 1.1em;
+      white-space: pre-wrap; margin-bottom: 40px;
+    }
+    .resource-card {
+      background: #1a1a1a; color: #fff;
+      padding: 30px; border-radius: 4px;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 40px; border-left: 8px solid #7CFC00;
+    }
+    .btn-eval {
+      width: 100%; padding: 25px;
+      background: #1a1a1a; color: #7CFC00;
+      border: none; font-weight: bold; font-size: 1.2em;
+      text-transform: uppercase; letter-spacing: 2px;
+      cursor: pointer; border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container extra-grande">
-  <div style="text-align: left; margin-bottom: 15px;">
-    <button onclick="window.location.href='lecciones.html'" style="width: auto; padding: 8px 15px; background: #ccc;">← Volver al Temario</button>
+<div class="full-wrapper">
+  <div style="margin-bottom: 30px;">
+    <button onclick="window.location.href='lecciones.html'" style="padding: 10px 20px; background: #eee; border: none; font-weight: bold; cursor: pointer;">VOLVER AL TEMARIO</button>
   </div>
 
-  <h1 id="titulo-leccion">Cargando...</h1>
-  
-  <div class="contenido-box" id="cuerpo-leccion">
-    <p>Cargando contenido de la lección...</p>
+  <div class="lesson-header">
+    <h1 id="titulo-leccion" style="font-size: 3em; margin: 0; color: #1a1a1a; text-transform: uppercase;">CONSULTANDO LECCIÓN...</h1>
   </div>
 
-  <div id="recursos" style="text-align: left; margin-bottom: 20px; font-size: 14px;"></div>
+  <div id="cuerpo-leccion" class="theory-box">
+    CARGANDO CONTENIDO TEÓRICO...
+  </div>
 
-  <button class="btn-accion" onclick="irAlExamen()">Presentar Evaluación</button>
+  <div id="seccion-recurso" style="display: none;">
+    <div class="resource-card">
+      <div>
+        <div style="color: #7CFC00; font-size: 0.8em; font-weight: bold; letter-spacing: 1px;">RECURSO DIDÁCTICO DISPONIBLE</div>
+        <h3 id="res-titulo" style="margin: 5px 0; text-transform: uppercase;"></h3>
+        <p id="res-desc" style="color: #888; font-size: 0.9em; margin: 0;"></p>
+      </div>
+      <a id="res-link" href="#" target="_blank" style="background: #7CFC00; color: #1a1a1a; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 4px;">ABRIR MATERIAL</a>
+    </div>
+  </div>
+
+  <button class="btn-eval" onclick="irAlExamen()">PRESENTAR EVALUACIÓN DE UNIDAD</button>
 </div>
 
 <script>
@@ -31,30 +81,27 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     const idLeccion = sessionStorage.getItem("leccionActual");
-    if (!idLeccion) {
-      window.location.href = "bienvenida.html";
-      return;
-    }
+    if (!idLeccion) { window.location.href = "bienvenida.html"; return; }
 
-    const { data: leccion, error } = await _supabase
-      .from('leccion')
-      .select('*')
-      .eq('id_leccion', idLeccion)
-      .single();
-
+    const { data: leccion } = await _supabase.from('leccion').select('*').eq('id_leccion', idLeccion).single();
     if (leccion) {
-      document.getElementById('titulo-leccion').innerText = leccion.tema;
-      document.getElementById('cuerpo-leccion').innerHTML = `<p>${leccion.contenido}</p>`;
-      if (leccion.recursos_didacticos) {
-        document.getElementById('recursos').innerHTML = `<b>Recurso de apoyo:</b> <a href="#">${leccion.recursos_didacticos}</a>`;
-      }
+      document.getElementById('titulo-leccion').innerText = leccion.tema.toUpperCase();
+      document.getElementById('cuerpo-leccion').innerText = leccion.contenido;
+      cargarRecurso(idLeccion);
     }
   });
 
-  function irAlExamen() {
-    window.location.href = "evaluacion.html";
+  async function cargarRecurso(id) {
+    const { data } = await _supabase.from('recurso_refuerzo').select('*').eq('id_leccion', id).single();
+    if (data) {
+      document.getElementById('seccion-recurso').style.display = 'block';
+      document.getElementById('res-titulo').innerText = data.titulo.toUpperCase();
+      document.getElementById('res-desc').innerText = data.descripcion || "MATERIAL DE REFUERZO SELECCIONADO POR EL DOCENTE.";
+      document.getElementById('res-link').href = data.url;
+    }
   }
-</script>
 
+  function irAlExamen() { window.location.href = "evaluacion.html"; }
+</script>
 </body>
 </html>

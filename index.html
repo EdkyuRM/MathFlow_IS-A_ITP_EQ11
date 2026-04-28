@@ -1,37 +1,183 @@
 <!DOCTYPE html>
 <html lang="es">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <head>
   <meta charset="UTF-8">
-  <title>Login / Registro</title>
+  <title>MathFlow - Aprendizaje Adaptativo</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* 1. Fondo de la página */
+    body {
+      margin: 0;
+      padding: 0;
+      background-image: url('imagenes/recursos/fondo_index.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* 4. Tarjeta de la izquierda (Vertical completa) */
+    .sidebar-hero {
+      width: 380px;
+      background: rgba(26, 26, 26, 0.95);
+      color: white;
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      box-sizing: border-box;
+      box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+      z-index: 10;
+      border-right: 4px solid #7CFC00;
+    }
+
+    /* 3. Logo en la tarjeta */
+    .sidebar-hero img.logo {
+      width: 150px;
+      height: auto;
+      border-radius: 20px;
+      margin-bottom: 25px;
+      border: 3px solid #7CFC00;
+    }
+
+    .sidebar-hero h1 {
+      font-size: 2.8em;
+      margin: 0;
+      color: #7CFC00;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .sidebar-hero p {
+      text-align: center;
+      color: #ccc;
+      line-height: 1.6;
+      margin: 20px 0 40px 0;
+    }
+
+    /* Contenido de la derecha */
+    .main-content {
+      margin-left: 380px; /* Deja espacio para la sidebar */
+      flex: 1;
+      padding: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end; /* 4. Orienta recuadros a la derecha */
+      justify-content: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .features-container {
+      max-width: 600px;
+      text-align: right;
+    }
+
+    .feature-box {
+      background: rgba(255, 255, 255, 0.92);
+      border-right: 8px solid #7CFC00;
+      padding: 25px;
+      border-radius: 15px 0 0 15px;
+      margin-bottom: 25px;
+      box-shadow: -10px 10px 20px rgba(0,0,0,0.2);
+      transition: transform 0.3s;
+    }
+
+    .feature-box:hover {
+      transform: translateX(-10px);
+    }
+
+    .feature-box h3 {
+      margin: 0 0 10px 0;
+      color: #1a1a1a;
+      font-size: 1.5em;
+    }
+
+    /* Botones CTA */
+    .btn-hero {
+      background: #7CFC00;
+      color: #1a1a1a;
+      padding: 15px 35px;
+      font-size: 16px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      display: block;
+      width: 80%;
+      text-align: center;
+      margin-bottom: 15px;
+      transition: all 0.3s;
+    }
+
+    .btn-hero:hover {
+      background: white;
+      transform: scale(1.05);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: #7CFC00;
+      border: 2px solid #7CFC00;
+    }
+
+    /* 2. Copyright al fondo de la página */
+    footer {
+      position: fixed;
+      bottom: 20px;
+      right: 40px;
+      color: white;
+      font-size: 12px;
+      background: rgba(0,0,0,0.5);
+      padding: 5px 15px;
+      border-radius: 20px;
+      backdrop-filter: blur(5px);
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-  <h1 id="title">Crear cuenta nueva</h1>
-  <div class="subtitle">Mathflow: Plataforma Adaptativa con IA</div>
+  <aside class="sidebar-hero">
+    <img src="imagenes/recursos/logo.jpeg" alt="MathFlow Logo" class="logo">
+    <h1>MathFlow</h1>
+    <p>La plataforma educativa que evoluciona contigo. Rutas de aprendizaje creadas por IA para ingenieros del futuro.</p>
+    
+    <a href="acceso.html?modo=registro" class="btn-hero">Empezar Gratis</a>
+    <a href="acceso.html?modo=login" class="btn-hero btn-outline">Iniciar Sesión</a>
+  </aside>
 
-  <img src="imagenes/logo.jpeg" alt="logo">
+  <main class="main-content">
+    <div class="features-container">
+      <h2 style="color: white; font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 40px;">
+        Reinventando el Aprendizaje
+      </h2>
+      
+      <div class="feature-box">
+        <h3>Algoritmo Adaptativo</h3>
+        <p>Detectamos tus brechas de conocimiento y generamos material de refuerzo personalizado al instante.</p>
+      </div>
+      
+      <div class="feature-box">
+        <h3>Métricas Avanzadas</h3>
+        <p>Analiza tu progreso con datos reales. Mira cómo tus habilidades mejoran con cada lección completada.</p>
+      </div>
 
-  <input type="text" id="usuario" placeholder="Usuario">
-  <input type="email" id="correo" placeholder="Correo Electrónico">
-  <input type="password" id="password" placeholder="Contraseña">
- 
+      <div class="feature-box">
+        <h3>Gestión Docente</h3>
+        <p>Herramientas poderosas para que los profesores guíen a sus alumnos basándose en el desempeño real.</p>
+      </div>
+    </div>
+  </main>
 
-  <select id="rol">
-    <option value="">Seleccionar rol</option>
-    <option value="Estudiante">Estudiante</option>
-    <option value="Docente">Docente</option>
-  </select>
+  <footer>
+    &copy; 2026 MathFlow Project | Ingeniería y Educación Adaptativa
+  </footer>
 
-  <button onclick="accionUsuario()" id="btn">Sign up</button>
-
-  <div class="toggle" onclick="cambiarModo()" id="toggleText">
-    ¿Ya tienes cuenta? Inicia sesión
-  </div>
-</div>
-
-<script src="script_login_signin.js"></script>
 </body>
 </html>

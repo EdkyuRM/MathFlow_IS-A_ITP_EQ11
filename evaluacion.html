@@ -2,26 +2,66 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Evaluación - MathFlow</title>
+  <title>Evaluación Académica - MathFlow</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-image: url('imagenes/recursos/fondo_general.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+      display: flex; justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .exam-wrapper {
+      width: 90%; max-width: 1000px;
+      background: rgba(255, 255, 255, 0.99);
+      min-height: 100vh; padding: 60px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.5);
+      box-sizing: border-box; text-align: center;
+    }
+    .question-box {
+      background: #f9f9f9; border: 1px solid #ddd;
+      padding: 40px; border-radius: 4px; text-align: left;
+      margin-bottom: 30px;
+    }
+    .option-btn {
+      display: block; width: 100%;
+      padding: 20px; margin-bottom: 15px;
+      background: #fff; border: 1px solid #ccc;
+      text-align: left; cursor: pointer;
+      font-size: 1.1em; transition: 0.3s;
+    }
+    .option-btn:hover { border-color: #7CFC00; background: #f0fff0; }
+    .option-btn.selected { border-color: #7CFC00; background: #eaffd0; font-weight: bold; }
+    
+    .result-card {
+      background: #1a1a1a; color: white;
+      padding: 50px; border-radius: 4px;
+      display: none;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container extra-grande">
-  <h1 id="titulo-examen">Evaluación</h1>
-  <div class="subtitle" id="sub-examen">Responde las siguientes preguntas</div>
+<div class="exam-wrapper">
+  <div id="contenedor-examen">
+    <h1 style="text-transform: uppercase; letter-spacing: 2px;">Evaluación de Unidad</h1>
+    <div style="color: #888; font-weight: bold; margin-bottom: 40px;">SELECCIONA LA RESPUESTA CORRECTA</div>
 
-  <div id="contenedor-preguntas">
-    <p>Cargando preguntas...</p>
+    <div class="question-box">
+      <h2 id="texto-pregunta" style="margin-top: 0; color: #333;"></h2>
+      <div id="opciones-lista" style="margin-top: 30px;"></div>
+    </div>
+
+    <button id="btn-finalizar" class="btn-hero" onclick="calificar()" style="width: 100%; display: none;">ENVIAR RESPUESTA</button>
   </div>
 
-  <button class="btn-accion" id="btn-enviar" onclick="calificarExamen()" style="display:none;">Enviar y Calificar</button>
-  
-  <div id="resultado-box" class="contenido-box" style="display: none; margin-top: 20px; text-align: center;">
-    <h2 id="puntaje-final"></h2>
-    <p id="recomendacion-algoritmo" style="font-weight: bold;"></p>
-    <button class="btn-accion" onclick="window.location.href='bienvenida.html'">Volver al Inicio</button>
+  <div id="resultado-box" class="result-card">
+    <h2 style="color: #7CFC00;">RESULTADO DE EVALUACIÓN</h2>
+    <h1 id="puntaje-final" style="font-size: 4em; margin: 20px 0;">0%</h1>
+    <div id="feedback-ia" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 4px; line-height: 1.6;"></div>
+    <button class="btn-hero" onclick="window.location.href='bienvenida.html'" style="margin-top: 30px; background: #7CFC00; color: #1a1a1a;">VOLVER AL INICIO</button>
   </div>
 </div>
 
@@ -30,94 +70,60 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
   const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let preguntasExamen = []; // Guardaremos las preguntas aquí para validarlas
+  let respuestaSeleccionada = "";
+  let respuestaCorrectaDB = "";
+  let puntosPosibles = 0;
 
   document.addEventListener('DOMContentLoaded', async () => {
     const idLeccion = sessionStorage.getItem("leccionActual");
-    
-    // Traemos las preguntas de esta lección
-    const { data: evaluaciones } = await _supabase
-      .from('evaluacion')
-      .select('*')
-      .eq('id_leccion', idLeccion);
+    const { data: examen } = await _supabase.from('evaluacion').select('*').eq('id_leccion', idLeccion).single();
 
-    const contenedor = document.getElementById('contenedor-preguntas');
-    
-    if (!evaluaciones || evaluaciones.length === 0) {
-      contenedor.innerHTML = "<p>No hay preguntas asignadas a esta lección.</p>";
-      return;
+    if (examen) {
+      document.getElementById('texto-pregunta').innerText = examen.pregunta.toUpperCase();
+      respuestaCorrectaDB = examen.respuesta_correcta;
+      puntosPosibles = examen.puntaje;
+
+      const opciones = [examen.opcion_a, examen.opcion_b, examen.opcion_c, examen.opcion_d];
+      const contenedor = document.getElementById('opciones-lista');
+      
+      opciones.forEach(texto => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = texto;
+        btn.onclick = () => {
+          document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          respuestaSeleccionada = texto;
+          document.getElementById('btn-finalizar').style.display = "block";
+        };
+        contenedor.appendChild(btn);
+      });
     }
-
-    preguntasExamen = evaluaciones;
-    contenedor.innerHTML = ""; // Limpiar
-
-    // Dibujar el formulario
-    evaluaciones.forEach((eval, index) => {
-      const div = document.createElement('div');
-      div.className = 'pregunta-card';
-      // Para un prototipo rápido, usamos inputs de texto. 
-      // El alumno debe escribir la respuesta (ej. "La misma constante C" o "Falso")
-      div.innerHTML = `
-        <h4>${index + 1}. ${eval.pregunta}</h4>
-        <input type="text" id="respuesta-${eval.id_evaluacion}" class="respuesta-input" placeholder="Escribe tu respuesta aquí...">
-      `;
-      contenedor.appendChild(div);
-    });
-
-    document.getElementById('btn-enviar').style.display = "block";
   });
 
-  async function calificarExamen() {
-    let puntajeTotal = 0;
-    let puntajeMaximoPosible = 0;
+  async function calificar() {
+    const calificacion = (respuestaSeleccionada === respuestaCorrectaDB) ? 100 : 0;
+    const { data: { user } } = await _supabase.auth.getUser();
 
-    // 1. Validar las respuestas
-    preguntasExamen.forEach(eval => {
-      puntajeMaximoPosible += eval.puntaje;
-      const respuestaUsuario = document.getElementById(`respuesta-${eval.id_evaluacion}`).value.trim().toLowerCase();
-      const respuestaCorrecta = eval.respuesta_correcta.trim().toLowerCase();
-
-      // Si coincide, suma el puntaje de esa pregunta
-      if (respuestaUsuario === respuestaCorrecta) {
-        puntajeTotal += eval.puntaje;
-      }
-    });
-
-    // Calcular el porcentaje (0 a 100)
-    const calificacionFinal = Math.round((puntajeTotal / puntajeMaximoPosible) * 100);
-
-    // 2. Guardar en la Base de Datos (Para el Algoritmo)
-    const { data: authData } = await _supabase.auth.getUser();
-    const idLeccion = sessionStorage.getItem("leccionActual");
-
+    // Guardar progreso
     await _supabase.from('progreso_alumno').insert({
-      id_usuario: authData.user.id,
-      id_leccion: idLeccion,
-      puntaje_obtenido: calificacionFinal
+      id_usuario: user.id,
+      id_leccion: sessionStorage.getItem("leccionActual"),
+      puntaje_obtenido: calificacion
     });
 
-    // 3. Mostrar el resultado y la acción del Algoritmo (Basado en Reglas)
-    document.getElementById('contenedor-preguntas').style.display = "none";
-    document.getElementById('btn-enviar').style.display = "none";
-    
-    const resultadoBox = document.getElementById('resultado-box');
-    resultadoBox.style.display = "block";
-    document.getElementById('puntaje-final').innerText = `Tu calificación: ${calificacionFinal}/100`;
+    // Mostrar Resultados
+    document.getElementById('contenedor-examen').style.display = "none";
+    document.getElementById('resultado-box').style.display = "block";
+    document.getElementById('puntaje-final').innerText = calificacion + "%";
 
-    // AQUI INICIA LA LÓGICA DEL ALGORITMO HEURÍSTICO
-    const recomendacion = document.getElementById('recomendacion-algoritmo');
-    if (calificacionFinal < 70) {
-      recomendacion.style.color = "red";
-      recomendacion.innerText = "Algoritmo: Te sugerimos repasar la teoría de esta lección y ver el video de apoyo antes de avanzar.";
-    } else if (calificacionFinal <= 89) {
-      recomendacion.style.color = "orange";
-      recomendacion.innerText = "Algoritmo: ¡Buen trabajo! Te recomendamos realizar unos ejercicios de práctica para asegurar tu dominio.";
+    const feedback = document.getElementById('feedback-ia');
+    if (calificacion === 100) {
+      feedback.innerHTML = "EL ALGORITMO IA DETERMINA: DOMINIO TOTAL DEL TEMA. PUEDES CONTINUAR CON EL SIGUIENTE MÓDULO.";
     } else {
-      recomendacion.style.color = "green";
-      recomendacion.innerText = "Algoritmo: ¡Maestría alcanzada! Estás listo para desbloquear y avanzar a la siguiente lección.";
+      feedback.innerHTML = "<span style='color: #ff4d4d;'>EL ALGORITMO IA DETERMINA: SE DETECTARON BRECHAS DE CONOCIMIENTO. SE HA ACTIVADO UN RECURSO DE REFUERZO EN TU PANEL DE INICIO PARA NIVELAR TU APRENDIZAJE.</span>";
     }
   }
 </script>
-
 </body>
 </html>

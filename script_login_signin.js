@@ -3,7 +3,20 @@ const SUPABASE_URL = 'http://127.0.0.1:54321'; // IP directa
 const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let esRegistro = true;
+// Añade esto al principio de tu script_login_signin.js
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const modo = urlParams.get('modo');
+  
+  // Si la URL dice ?modo=registro, cambiamos la interfaz
+  if (modo === 'registro') {
+      esRegistro = true;
+      //cambiarModo();
+  } else {
+      esRegistro = true;
+      cambiarModo();
+  }
+});
 
 //Control de la Interfaz
 function cambiarModo() {

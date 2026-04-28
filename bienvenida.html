@@ -2,42 +2,113 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Bienvenida - MathFlow</title>
+  <title>Panel de Estudiante - MathFlow</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-image: url('imagenes/recursos/fondo_general.jpg');
+      background-size: cover; background-position: center; background-attachment: fixed;
+      display: flex; justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .dashboard-wrapper {
+      width: 95%; max-width: 1500px;
+      background: rgba(255, 255, 255, 0.98);
+      min-height: 100vh; padding: 60px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+    }
+    .dashboard-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 3px solid #7CFC00;
+      padding-bottom: 30px; margin-bottom: 50px;
+    }
+    .user-actions {
+      display: flex; gap: 15px;
+    }
+    .section-container {
+      display: grid; grid-template-columns: 1fr; gap: 40px;
+    }
+    .content-box {
+      background: #fff; border: 1px solid #ddd;
+      padding: 40px; border-radius: 4px;
+      min-height: 300px;
+      display: flex; flex-direction: column;
+    }
+    .btn-action {
+      background: #1a1a1a; color: #7CFC00;
+      border: none; padding: 12px 25px;
+      font-weight: bold; text-transform: uppercase;
+      letter-spacing: 1px; cursor: pointer;
+      border-radius: 4px; transition: 0.3s;
+    }
+    .btn-action:hover { background: #333; }
+    
+    .materias-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 25px; margin-top: 20px;
+    }
+    .materia-card {
+      border: 1px solid #eee; padding: 25px;
+      background: #fcfcfc; cursor: pointer;
+      display: flex; align-items: center; gap: 20px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .materia-card:hover {
+      transform: translateY(-5px);
+      border-color: #7CFC00;
+    }
+    .materia-card img {
+      width: 70px; height: 70px; border-radius: 4px; object-fit: cover;
+      border: 1px solid #ddd;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container grande">
+<div class="dashboard-wrapper">
+  <header class="dashboard-header">
+    <div style="text-align: left;">
+      <h1 id="saludo" style="font-size: 3.2em; margin: 0; color: #1a1a1a; text-transform: uppercase;">SINCRONIZANDO SISTEMA...</h1>
+      <div style="color: #666; letter-spacing: 2px; font-weight: bold; font-size: 0.9em;">CENTRO DE GESTIÓN ACADÉMICA</div>
+    </div>
+    <div class="user-actions">
+      <button onclick="window.location.href='perfil.html'" class="btn-action" style="background: #eee; color: #333;">MI PERFIL</button>
+      <button onclick="cerrarSesion()" class="btn-action" style="background: #ff4d4d; color: white;">SALIR</button>
+    </div>
+  </header>
 
-  <div style="text-align: right; margin-bottom: 10px;">
-    <button onclick="window.location.href='perfil.html'" 
-            style="width: auto; padding: 6px 12px; font-size: 12px; background: #333; color: #7CFC00; border-radius: 8px;">
-        👤 Mi Perfil
-    </button>
-    <button onclick="cerrarSesion()" 
-            style="width: auto; padding: 6px 12px; font-size: 12px; background: #ff4d4d; color: white; border-radius: 8px;">
-        Cerrar sesión
-    </button>
-  </div>
+  <div class="section-container">
+    
+    <div class="content-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px;">
+        <h2 style="text-transform: uppercase; font-size: 1.2em; letter-spacing: 2px; color: #1a1a1a; margin: 0;">
+          MIS ASIGNATURAS
+        </h2>
+        <button onclick="mostrarPromptInscripcion()" class="btn-action" style="font-size: 0.8em; padding: 8px 20px;">
+          + INSCRIBIRSE A CURSO
+        </button>
+      </div>
 
-  <h1 id="saludo">Cargando perfil...</h1>
-  
-  <div id="seccion-algoritmo" style="display:none; margin-bottom: 30px; background: #eaffd0; padding: 15px; border-radius: 15px; border: 2px dashed #7CFC00;">
-    <div class="subtitle" style="color: #222; font-weight: bold; margin-bottom: 10px;">🎯 Recomendado para tu progreso:</div>
-    <div id="contenedor-recomendaciones"></div>
-  </div>
+      <div id="contenedor-materias">
+        <p style="color: #999; text-align: center; padding: 40px;">BUSCANDO REGISTROS EN LA BASE DE DATOS...</p>
+      </div>
+    </div>
 
-  <div style="margin-bottom: 20px; text-align: left;">
-    <button onclick="mostrarPromptInscripcion()" style="background: #333; color: #7CFC00; width: auto; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">
-        ➕ Unirse a un curso con código
-    </button>
-</div>
+    <div id="seccion-algoritmo" class="content-box" style="border-top: 5px solid #7CFC00;">
+      <h2 style="text-transform: uppercase; font-size: 1.2em; letter-spacing: 2px; color: #1a1a1a; margin-bottom: 25px;">
+        SUGERENCIAS DE REFUERZO IA
+      </h2>
+      <div id="contenedor-recomendaciones">
+        <div style="text-align: center; padding: 50px; color: #999; background: #fafafa; border: 1px dashed #ddd;">
+          EL ALGORITMO NO HA DETECTADO NECESIDADES DE REFUERZO ACTUALMENTE. TU DESEMPEÑO ES ÓPTIMO.
+        </div>
+      </div>
+    </div>
 
-  <div class="subtitle">Tus cursos asignados:</div>
-
-  <div id="contenedor-materias">
-      <p id="mensaje-carga">Buscando tus clases...</p>
   </div>
 </div>
 
@@ -46,199 +117,87 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'; 
   const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  document.addEventListener('DOMContentLoaded', inicializarDashboard);
+  document.addEventListener('DOMContentLoaded', async () => {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) { window.location.href = "acceso.html"; return; }
 
-  async function inicializarDashboard() {
-    try {
-      const { data: authData, error: authError } = await _supabase.auth.getUser();
-      if (authError || !authData.user) {
-        window.location.href = "index.html"; 
-        return;
-      }
+    cargarPerfil(user.id);
+    cargarCursos(user.id);
+  });
 
-      const uidUsuario = authData.user.id;
-
-      const { data: perfilData } = await _supabase
-        .from('usuario')
-        .select('nombre')
-        .eq('id_usuario', uidUsuario)
-        .single();
-
-      if (perfilData) {
-        document.getElementById("saludo").innerText = "Bienvenid@, " + perfilData.nombre;
-      }
-
-      // Llamamos a ambas funciones en paralelo
-      cargarRecomendaciones(uidUsuario);
-      cargarCursos(uidUsuario);
-
-    } catch (err) {
-      console.error("Error al inicializar:", err);
+  async function cargarPerfil(uid) {
+    const { data } = await _supabase.from('usuario').select('nombre').eq('id_usuario', uid).single();
+    if (data) {
+      document.getElementById('saludo').innerText = "HOLA, " + data.nombre.toUpperCase();
     }
   }
 
-  // ==========================================
-  // ALGORITMO DE RECOMENDACION
-  // ==========================================
-  async function cargarRecomendaciones(uid) {
-    try {
-      // Buscar la evaluación más reciente donde el alumno sacó menos de 90
-      const { data: fallos, error: errProgreso } = await _supabase
-        .from('progreso_alumno')
-        .select('id_leccion, puntaje_obtenido, leccion(tema)')
-        .eq('id_usuario', uid)
-        .lt('puntaje_obtenido', 90)
-        .order('fecha_evaluacion', { ascending: false })
-        .limit(1);
-
-      if (errProgreso) throw errProgreso;
-
-      // Si hay un fallo, mostramos la sección y buscamos recursos
-      if (fallos && fallos.length > 0) {
-        const problema = fallos[0];
-        document.getElementById('seccion-algoritmo').style.display = "block";
-
-        // Traer los recursos de apoyo para esa lección en específico
-        const { data: recursos, error: errRecursos } = await _supabase
-          .from('recurso_refuerzo')
-          .select('*')
-          .eq('id_leccion', problema.id_leccion);
-
-        if (errRecursos) throw errRecursos;
-
-        const contenedor = document.getElementById('contenedor-recomendaciones');
-        contenedor.innerHTML = "";
-
-        if (recursos.length === 0) {
-          contenedor.innerHTML = "<p style='font-size:13px; color:#555;'>No hay recursos extra por el momento, ¡pero te sugerimos repasar la lección!</p>";
-        } else {
-          // Dibujar las tarjetas de recomendación
-          recursos.forEach(res => {
-            const card = document.createElement('div');
-            card.className = 'materia'; 
-            card.style.background = "#fff";
-            card.style.marginTop = "10px";
-            card.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
-            
-            card.innerHTML = `
-              <div style="font-size: 28px;">${res.tipo_recurso === 'Video' ? '📺' : (res.tipo_recurso === 'Lectura' ? '📖' : '📝')}</div>
-              <div class="materia-info">
-                <span style="color: #6be000; font-size: 11px; text-transform: uppercase;">Refuerzo: ${problema.leccion.tema}</span>
-                <span style="font-size: 14px; font-weight: bold; color: #333;">${res.titulo_recurso}</span>
-                <span style="font-size: 12px; font-weight: normal; color: gray;">${res.descripcion_recurso}</span>
-              </div>
-            `;
-            // Redirige al clip-holder
-            card.onclick = () => window.location.href = res.url_recurso;
-            contenedor.appendChild(card);
-          });
-        }
-      }
-    } catch (err) {
-      console.error("Error en algoritmo:", err);
-    }
-  }
-
-  // ==========================================
-  // FUNCIÓN ORIGINAL DE CARGA DE CURSOS
-  // ==========================================
   async function cargarCursos(uid) {
     const contenedor = document.getElementById('contenedor-materias');
     
+    // Usamos el alias explícito para evitar conflictos de relaciones
     const { data: inscripciones, error } = await _supabase
       .from('inscripcion')
       .select(`
         id_curso,
         curso!fk_curso_inscrito (
           nombre_curso,
-          asignatura (
-            nombre_asignatura,
-            img_url_asignatura
-          )
+          asignatura (nombre_asignatura, img_url_asignatura)
         )
       `)
       .eq('id_usuario', uid);
 
-    if (error) {
-      contenedor.innerHTML = "<p>Error al cargar las materias.</p>";
-      console.error(error);
+    if (error || !inscripciones || inscripciones.length === 0) {
+      contenedor.innerHTML = "<div style='text-align: center; padding: 60px; border: 2px dashed #eee; color: #aaa; text-transform: uppercase;'>NO TIENES ASIGNATURAS REGISTRADAS EN TU PERFIL.</div>";
       return;
     }
 
-    if (inscripciones.length === 0) {
-      contenedor.innerHTML = "<p>Aún no estás inscrito en ningún curso.</p>";
-      return;
-    }
+    contenedor.innerHTML = "";
+    const grid = document.createElement('div');
+    grid.className = 'materias-grid';
 
-    contenedor.innerHTML = ""; 
-    
-    inscripciones.forEach(inscripcion => {
-      const datosCurso = inscripcion.curso;
-      // Protección: Si el curso no tiene asignatura vinculada, evitamos que el código truene
-      const datosAsignatura = datosCurso?.asignatura;
-
-      if (!datosCurso) return; // Saltar si hay datos corruptos
-
-      const divMateria = document.createElement('div');
-      divMateria.className = 'materia';
-      divMateria.onclick = () => seleccionarCurso(inscripcion.id_curso, datosAsignatura?.nombre_asignatura || "Sin nombre");
+    inscripciones.forEach(ins => {
+      const curso = ins.curso;
+      const asig = curso.asignatura;
       
-      divMateria.innerHTML = `
-        <img src="${datosAsignatura?.img_url_asignatura || 'imagenes/default.png'}" alt="materia">
-        <div class="materia-info">
-            <span>${datosAsignatura?.nombre_asignatura || 'Asignatura'}</span>
-            <span style="font-size: 12px; color: #444; font-weight: normal;">${datosCurso.nombre_curso}</span>
+      const card = document.createElement('div');
+      card.className = 'materia-card';
+      card.onclick = () => {
+        sessionStorage.setItem("cursoActual", ins.id_curso);
+        sessionStorage.setItem("nombreMateria", asig.nombre_asignatura);
+        window.location.href = "lecciones.html";
+      };
+
+      card.innerHTML = `
+        <img src="${asig.img_url_asignatura || 'imagenes/recursos/default.png'}">
+        <div style="text-align: left;">
+          <div style="font-weight: bold; font-size: 1.1em; color: #1a1a1a; letter-spacing: 0.5px;">${asig.nombre_asignatura.toUpperCase()}</div>
+          <div style="font-size: 0.8em; color: #888; margin-top: 6px; text-transform: uppercase;">ID CURSO: ${ins.id_curso}</div>
         </div>
       `;
-      
-      contenedor.appendChild(divMateria);
+      grid.appendChild(card);
     });
+    contenedor.appendChild(grid);
   }
 
-  function seleccionarCurso(idCurso, nombreMateria) {
-    sessionStorage.setItem("cursoActual", idCurso);
-    sessionStorage.setItem("nombreMateria", nombreMateria);
-    window.location.href = "lecciones.html"; 
-  }
-  async function cerrarSesion() {
-  const { error } = await _supabase.auth.signOut();
-  if (error) console.error("Error al salir:", error);
-  sessionStorage.clear();
-  window.location.href = "index.html";
-}
-
-async function mostrarPromptInscripcion() {
-    const respuesta = prompt("Introduce el Código de Invitación del curso:");
-    if (!respuesta) return;
-
-    // Convertimos el texto a número para que la DB no lo rechace
-    const idCurso = parseInt(respuesta.trim());
-    
-    if (isNaN(idCurso)) {
-        alert("❌ El código debe ser un número.");
-        return;
-    }
+  async function mostrarPromptInscripcion() {
+    const cod = prompt("INTRODUCE EL CÓDIGO NUMÉRICO DEL CURSO:");
+    if (!cod) return;
+    const idCurso = parseInt(cod.trim());
+    if (isNaN(idCurso)) return alert("ERROR: EL CÓDIGO DEBE SER UN VALOR NUMÉRICO.");
 
     const { data: { user } } = await _supabase.auth.getUser();
+    const { error } = await _supabase.from('inscripcion').insert({ id_usuario: user.id, id_curso: idCurso });
 
-    const { error } = await _supabase
-        .from('inscripcion')
-        .insert({
-            id_usuario: user.id,
-            id_curso: idCurso
-        });
+    if (error) alert("ERROR DE INSCRIPCIÓN: EL CÓDIGO ES INVÁLIDO O YA ESTÁS INSCRITO.");
+    else location.reload();
+  }
 
-    if (error) {
-        if (error.code === '23503') alert("❌ Ese código de curso no existe.");
-        else if (error.code === '23505') alert("⚠️ Ya estás en este curso.");
-        else console.error(error);
-    } else {
-        alert("✅ ¡Inscripción exitosa!");
-        location.reload();
-    }
-}
-
+  async function cerrarSesion() {
+    await _supabase.auth.signOut();
+    sessionStorage.clear();
+    window.location.href = "index.html";
+  }
 </script>
-
 </body>
 </html>
